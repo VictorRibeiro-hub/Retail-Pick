@@ -1,0 +1,813 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Retail Pick Productivity Tracker</title>
+  <!-- Importa a biblioteca SheetJS para exportação XLSX -->
+  <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+  <!-- FontAwesome para ícones -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    /* Global Reset e Estilo do Body */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: Arial, sans-serif; background-color: #f4f4f4; color: #333; }
+    /* Top Bar: fundo vermelho, inclui logo, navegação e info do usuário */
+    .top-bar {
+      background-color: #d32f2f; /* Vermelho */
+      color: #fff;
+      padding: 15px 20px;
+      font-size: 26px;
+      font-weight: bold;
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 1000;
+    }
+    .top-bar .logo-container {
+      display: flex;
+      align-items: center;
+    }
+    .top-bar .logo-container img {
+      height: 50px;
+      margin-right: 10px;
+    }
+    .top-bar > span {
+      flex-grow: 1;
+    }
+    /* Botões de Navegação na Top Bar */
+    .tab-nav {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+    .tab-btn {
+      background: transparent;
+      border: none;
+      color: #fff;
+      cursor: pointer;
+      padding: 5px 8px;
+      transition: color 0.3s;
+    }
+    .tab-btn .btn-text {
+      opacity: 0;
+      margin-left: 5px;
+      font-size: 14px;
+      color: yellow;
+      transition: opacity 0.3s;
+    }
+    .tab-btn:hover .btn-text {
+      opacity: 1;
+    }
+    .user-info {
+      font-size: 12px;
+      font-weight: normal;
+      opacity: 0.9;
+    }
+    /* Sidebar: fixa à esquerda, alinhada logo abaixo da top bar */
+    .sidebar {
+      position: fixed;
+      top: 80px; /* Inicia logo abaixo da top bar */
+      left: 0;
+      bottom: 0;
+      width: 240px;
+      background-color: #000; /* Fundo preto */
+      padding: 35px 20px 20px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      box-shadow: 3px 0 8px rgba(0, 0, 0, 0.3);
+      color: #fff;
+      z-index: 900;
+    }
+    /* Removido o logo da sidebar */
+    /* Estilo comum para os botões de ação (Choose CSV File e Download XLSX) */
+    .sidebar .action-btn {
+      display: inline-block;
+      padding: 10px 20px;
+      font-size: 14px;         /* Tamanho de fonte 14px */
+      font-weight: normal;     /* Sem bold */
+      color: #fff;
+      background-color: #333;  /* Fundo neutro (cinza escuro) */
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      text-align: center;
+      transition: background 0.3s, padding-left 0.3s;
+    }
+    .sidebar .action-btn:hover {
+      background-color: #222;
+      padding-left: 20px;
+    }
+    /* Esconde o input real de arquivo */
+    #csvFileInput { display: none; }
+    /* Summary Cards na Sidebar com títulos e números separados */
+    .sidebar .summary-card {
+      padding: 10px 20px;
+      background-color: #333;
+      border-radius: 5px;
+      text-align: center;
+      transition: background 0.3s;
+    }
+    .sidebar .summary-card:hover {
+      background-color: #222;
+    }
+    .sidebar .summary-card .summary-title {
+      font-size: 14px;       /* Tamanho de fonte do título */
+      font-weight: normal;
+      color: #fff;           /* Título em branco */
+    }
+    .sidebar .summary-card .summary-number {
+      font-size: 20px;       /* Tamanho de fonte maior para o número */
+      font-weight: bold;
+      color: #ffc107;        /* Cor dourada */
+      margin-top: 5px;
+    }
+    /* Main Content: margem à esquerda para não sobrepor a sidebar e abaixo da top bar */
+    .main-content {
+      margin-left: 240px;  /* Largura da sidebar */
+      margin-top: 55px;    /* Altura da top bar */
+      padding: 20px;
+      overflow-y: auto;    /* Adiciona rolagem vertical */
+      height: calc(100vh - 80px); /* Altura total menos a altura da top bar */
+    }
+    /* Conteúdo das Abas (Home e Gaps) */
+    #homeTabContent, #gapsTabContent { margin-top: 20px; }
+    /* Tabelas */
+   table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+  th, td {
+    padding: 10px;
+    text-align: center;
+    border: 1px solid #ddd;
+    word-wrap: break-word;
+  }
+
+  /* Cabeçalho das Tabelas: fundo preto, texto branco */
+  /* Cabeçalho das Tabelas: fundo preto, texto branco */
+#productivityTable thead tr:first-child th,
+#gapsTable          thead tr:first-child th {
+  background-color: #000;
+  color: #fff;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  font-size: 13px;   /* ↓ NOVO — diminui só a fonte do cabeçalho */
+}
+
+  /* ← Aqui, logo abaixo: */
+  /* Ajuste para coluna Performance sem deformar o layout */
+  #productivityTable th:nth-child(8) {
+    width: 180px;
+  }
+  #productivityTable td:nth-child(8) {
+    max-width: 180px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+    /* Linha de Filtros Integrada no Cabeçalho */
+    .filter-row {
+      background-color: #000; /* Fundo preto */
+      color: #fff; /* Texto branco */
+    }
+    .filter-row input,
+    .filter-row select {
+      width: 90%;
+      padding: 5px;
+      font-size: 12px;
+      border: 1px solid #ccc;
+      border-radius: 3px;
+    }
+    /* Corpo das Tabelas: tamanho da fonte dos dados */
+    #productivityTable tbody td,
+    #gapsTable tbody td {
+      font-size: 14px;
+    }
+    /* Classes de Performance */
+    .performance-well-done { color: #28a745; font-weight: bold; }
+    .performance-poor { color: #dc3545; font-weight: bold; }
+    .performance-almost-there { color: #ff8c00; font-weight: bold; }
+    .performance-no-activity { color: #000; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <!-- Top Bar -->
+  <div class="top-bar">
+    <div class="logo-container">
+      <!-- Logo da DHL na top bar -->
+      <img src="dhl-logo.png" alt="DHL Logo" />
+    </div>
+    <span>Retail Pick Productivity Tracker</span>
+    <!-- Botões de Navegação na Top Bar -->
+    <div class="tab-nav">
+      <button class="tab-btn" id="homeTabBtn" data-target="homeTabContent" title="Home">
+        <i class="fa fa-home"></i><span class="btn-text">Home</span>
+      </button>
+      <button class="tab-btn" id="gapsTabBtn" data-target="gapsTabContent" title="Gaps">
+        <i class="fa fa-chart-bar"></i><span class="btn-text">Gaps</span>
+      </button>
+    </div>
+    <div class="user-info">Victor Ribeiro DHL(Supply Chain)</div>
+  </div>
+  <!-- Sidebar (fixa à esquerda) -->
+  <nav class="sidebar">
+    <!-- Controles de Upload e Download com a classe de ação -->
+    <label for="csvFileInput" class="action-btn file-label">
+      <i class="fa fa-file"></i> Choose CSV File
+    </label>
+    <input type="file" id="csvFileInput" accept=".csv" />
+    <button id="downloadReportBtnXLSX" class="action-btn upload-btn">
+      <i class="fa fa-download"></i> Download XLSX
+    </button>
+    <!-- Summary Cards com títulos (em branco) e números (em dourado) -->
+    <div class="summary-card">
+      <div class="summary-title">Total User ID</div>
+      <div class="summary-number" id="userCountLabel">0</div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-title">T. User ID Lost</div>
+      <div class="summary-number" id="userLostLabel">0.00</div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-title">T.W.H</div>
+      <div class="summary-number" id="twhLabel">00:00:00</div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-title">Prod. Hours</div>
+      <div class="summary-number" id="prodHoursLabel">00:00:00</div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-title">Diferença</div>
+      <div class="summary-number" id="differenceLabel">00:00:00</div>
+    </div>
+  </nav>
+  <!-- Main Content -->
+  <div class="main-content">
+    <!-- Conteúdo da Aba Home -->
+    <div id="homeTabContent">
+      <table id="productivityTable">
+        <thead>
+          <tr>
+            <th style="min-width:100px;">Date</th>
+            <th>User ID</th>
+            <th>Qty</th>
+            <th>In Time</th>
+            <th>Out Time</th>
+            <th>Total Hours</th>
+            <th>Prod. Hours</th>
+            <th>Performance</th>
+            <th>Total Gaps</th>
+            <th>N. Gaps</th>
+            <th>Qty. Tnx</th>
+            <th>Gap vs Txn%</th>
+            <th>Avg. P. Hours</th>
+          </tr>
+          <!-- Linha de Filtros Integrada no Cabeçalho -->
+          <tr class="filter-row">
+            <th></th>
+            <th>
+              <input type="text" id="filterUserId" placeholder="Filter by User ID" />
+            </th>
+            <th></th>
+            <th></th>
+            <th></th>
+            <th></th>
+            <th></th>
+            <th>
+              <select id="filterPerformance">
+                <option value="">All</option>
+                <option value="Well Done">Well Done</option>
+                <option value="Almost There">Almost There</option>
+                <option value="Poor">Poor</option>
+                <option value="No Activity">No Activity</option>
+              </select>
+            </th>
+            <th></th>
+            <th></th>
+            <th></th>
+            <th></th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Linhas dinâmicas geradas pela lógica -->
+        </tbody>
+      </table>
+    </div>
+<div id="gapsTabContent" style="display: none;">
+  <table id="gapsTable">
+    <thead>
+      <tr>
+        <th style="min-width:100px;">Date</th>
+        <th>User ID</th>
+        <th>Location IN</th>
+        <th>Location OUT</th>
+        <th>In Time</th>
+        <th>Out Time</th>
+        <th>Gap Time</th>
+        <th>Gap #</th>
+      </tr>
+      <!-- Linha de Filtros Integrada no Cabeçalho REMOVIDA -->
+    </thead>
+    <tbody>
+          <!-- Linhas dinâmicas geradas pela lógica -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <!-- Lógica JavaScript (100% inalterada) -->
+  <script>
+    /* ======================================================
+     * Configurações Globais para Retail Pick Tracker
+     * ====================================================== */
+    const trackerTarget = 209; // Target fixo de 209 unidades/hora
+
+    /* ======================================================
+     * Funções Utilitárias
+     * ====================================================== */
+    function timeToSeconds(time) {
+      const [h, m, s] = time.split(':').map(Number);
+      return (h || 0) * 3600 + (m || 0) * 60 + (s || 0);
+    }
+
+    function ensureTimeFormat(time) {
+      const parts = time.split(':');
+      return parts.length === 2 ? `${time}:00` : time;
+    }
+
+    function calculateSecondsDifference(start, end) {
+      start = ensureTimeFormat(start.trim());
+      end = ensureTimeFormat(end.trim());
+      const startSec = timeToSeconds(start);
+      const endSec = timeToSeconds(end);
+      let diff = endSec - startSec;
+      if (diff < 0) diff += 24 * 3600;
+      return diff;
+    }
+
+    function formatDecimalToTime(decimalHours) {
+      let sign = "";
+      if (decimalHours < 0) {
+        sign = "-";
+        decimalHours = Math.abs(decimalHours);
+      }
+      const totalSeconds = Math.round(decimalHours * 3600);
+      const hours = Math.floor(totalSeconds / 3600);
+      const minutes = Math.floor((totalSeconds % 3600) / 60);
+      const seconds = totalSeconds % 60;
+      return (
+        sign +
+        String(hours).padStart(2, '0') + ":" +
+        String(minutes).padStart(2, '0') + ":" +
+        String(seconds).padStart(2, '0')
+      );
+    }
+
+    function formatDate(date) {
+      if (!date) return '';
+      const parts = date.split(/[^\d]/).filter(Boolean);
+      if (parts.length === 3) {
+        const [year, month, day] = parts.map(Number).sort((a, b) => a - b);
+        return `${String(day).padStart(2, '0')}/${String(month).padStart(2, '0')}/${year}`;
+      }
+      return date;
+    }
+
+    /* ======================================================
+     * Funções de Troca de Aba
+     * ====================================================== */
+    function showHomeTab() {
+      document.getElementById('homeTabContent').style.display = 'block';
+      document.getElementById('gapsTabContent').style.display = 'none';
+    }
+
+    function showGapsTab() {
+      document.getElementById('homeTabContent').style.display = 'none';
+      document.getElementById('gapsTabContent').style.display = 'block';
+    }
+
+    /* ======================================================
+     * Atualização da Tabela Home
+     * ====================================================== */
+    function updateTable(dataMap) {
+      const tableBody = document.querySelector('#productivityTable tbody');
+      tableBody.innerHTML = '';
+
+      Object.entries(dataMap).forEach(([userId, stats]) => {
+        const { qty, inTime, outTime, totalHours, performance, performanceClass, totalGaps, nGaps, date, txnCount } = stats;
+        const prodHours = formatDecimalToTime(qty / trackerTarget);
+        const gapTxnPercent = txnCount ? ((nGaps / txnCount) * 100).toFixed(2) + "%" : "0.00%";
+        const totalHoursDecimal = timeToSeconds(totalHours) / 3600;
+        const avgPHours = totalHoursDecimal > 0 ? (qty / totalHoursDecimal).toFixed(0) : "0";
+        
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td style="min-width:100px;">${date || ''}</td>
+          <td>${userId}</td>
+          <td>${qty}</td>
+          <td>${inTime || 'N/A'}</td>
+          <td>${outTime || 'N/A'}</td>
+          <td>${totalHours || '00:00:00'}</td>
+          <td>${prodHours}</td>
+          <td class="${performanceClass}">${performance}</td>
+          <td>${formatDecimalToTime(totalGaps)}</td>
+          <td>${nGaps || 0}</td>
+          <td>${txnCount}</td>
+          <td>${gapTxnPercent}</td>
+          <td>${avgPHours}</td>
+        `;
+        tableBody.appendChild(row);
+      });
+    }
+
+    /* ======================================================
+     * Atualização da Tabela Gaps
+     * ====================================================== */
+    function updateGapsTable(dataMap) {
+      const gapsTableBody = document.querySelector('#gapsTable tbody');
+      gapsTableBody.innerHTML = '';
+      
+      Object.entries(dataMap).forEach(([userId, stats]) => {
+        if (stats.nGaps > 0 && stats.gapsList && stats.gapsList.length > 0) {
+          stats.gapsList.forEach((gapObj, index) => {
+            const gapTimeFormatted = formatDecimalToTime(gapObj.gapSec / 3600);
+            const row = document.createElement('tr');
+            row.innerHTML = `
+              <td>${stats.date || ''}</td>
+              <td>${userId}</td>
+              <td>${gapObj.locationIn || ''}</td>
+              <td>${gapObj.locationOut || ''}</td>
+              <td>${gapObj.start || 'N/A'}</td>
+              <td>${gapObj.end || 'N/A'}</td>
+              <td>${gapTimeFormatted}</td>
+              <td>${index + 1}</td>
+            `;
+            gapsTableBody.appendChild(row);
+          });
+        }
+      });
+    }
+
+    /* ======================================================
+     * Atualização das Estatísticas
+     * ====================================================== */
+    function updateStats(dataMap) {
+      let sumWorkedHours = 0;
+      let sumProdHours = 0;
+
+      Object.values(dataMap).forEach(stats => {
+        const totalHoursSec = timeToSeconds(stats.totalHours);
+        sumWorkedHours += totalHoursSec / 3600;
+        const neededHours = stats.qty / trackerTarget;
+        sumProdHours += neededHours;
+      });
+
+      const difference = sumWorkedHours - sumProdHours;
+
+      // Atualiza os summary cards apenas com os números
+      document.getElementById('twhLabel').textContent = formatDecimalToTime(sumWorkedHours);
+      document.getElementById('prodHoursLabel').textContent = formatDecimalToTime(sumProdHours);
+      document.getElementById('differenceLabel').textContent = formatDecimalToTime(difference);
+
+      const totalUsers = Object.keys(dataMap).length;
+      document.getElementById('userCountLabel').textContent = totalUsers;
+      const lostDecimal = difference / 7.5;
+      document.getElementById('userLostLabel').textContent = lostDecimal.toFixed(2);
+    }
+
+    /* ======================================================
+     * Função de Filtragem para a Aba Home
+     * ====================================================== */
+    function applyFilters(dataMap) {
+      const performanceFilter = document.getElementById('filterPerformance').value;
+      const userIdFilter = document.getElementById('filterUserId').value.toLowerCase();
+
+      const filtered = Object.entries(dataMap).filter(([userId, stats]) => {
+        const matchesPerformance = !performanceFilter || stats.performance.includes(performanceFilter);
+        const matchesUserId = !userIdFilter || userId.toLowerCase().includes(userIdFilter);
+        return matchesPerformance && matchesUserId;
+      });
+
+      const filteredMap = Object.fromEntries(filtered);
+      updateTable(filteredMap);
+      updateStats(filteredMap);
+    }
+
+    /* ======================================================
+     * Função para ajustar o tamanho da fonte nas células do XLSX
+     * ====================================================== */
+    function setFontSize(sheet, size) {
+      Object.keys(sheet).forEach(function(cell) {
+        if(cell.startsWith('!')) return;
+        if(!sheet[cell].s) sheet[cell].s = {};
+        if(!sheet[cell].s.font) sheet[cell].s.font = {};
+        sheet[cell].s.font.sz = size;
+      });
+    }
+
+    /* ======================================================
+     * Lógica Principal e Eventos
+     * ====================================================== */
+    document.getElementById('csvFileInput').addEventListener('change', handleFileUpload);
+    document.getElementById('downloadReportBtnXLSX').addEventListener('click', downloadExcelReport);
+    // Botões de Navegação na Top Bar
+    document.getElementById('homeTabBtn').addEventListener('click', showHomeTab);
+    document.getElementById('gapsTabBtn').addEventListener('click', showGapsTab);
+    // Eventos para os filtros integrados
+    document.getElementById('filterPerformance').addEventListener('change', () => {
+      const savedData = localStorage.getItem('retailPickData');
+      if (savedData) {
+        const dataMap = JSON.parse(savedData);
+        applyFilters(dataMap);
+      }
+    });
+    document.getElementById('filterUserId').addEventListener('input', () => {
+      const savedData = localStorage.getItem('retailPickData');
+      if (savedData) {
+        const dataMap = JSON.parse(savedData);
+        applyFilters(dataMap);
+      }
+    });
+
+    window.onload = function () {
+      const savedData = localStorage.getItem('retailPickData');
+      if (savedData) {
+        const dataMap = JSON.parse(savedData);
+        updateTable(dataMap);
+        updateStats(dataMap);
+        updateGapsTable(dataMap);
+      }
+    };
+
+    function handleFileUpload(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        processCSV(e.target.result);
+      };
+      reader.readAsText(file);
+    }
+
+    function processCSV(csvText) {
+      try {
+        const delimiter = csvText.includes(',') ? ',' : '\t';
+        const rows = csvText.split('\n').map(row => row.split(delimiter));
+
+        const dateFromFile = rows[3]?.[1]?.trim();
+        const formattedDate = formatDate(dateFromFile);
+
+        const dataMap = {};
+        const validEvents = {};
+        const allEvents = {};
+
+        // Ordena as linhas a partir da linha 5 pela coluna de tempo (índice 9)
+        const sortedRows = rows.slice(5).sort((a, b) => {
+          const timeA = a[9] || '';
+          const timeB = b[9] || '';
+          return timeA.localeCompare(timeB);
+        });
+
+        sortedRows.forEach(row => {
+          const userId = row[0]?.trim();
+          const qty = parseInt(row[5]?.trim(), 10) || 0;
+          const time = row[9]?.trim();
+          const location = row[7]?.trim();
+
+          if (!userId || !time) return;
+
+          if (!dataMap[userId]) {
+            dataMap[userId] = {
+              qty: 0,
+              inTime: null,
+              outTime: null,
+              totalHours: 0,
+              performance: '',
+              performanceClass: '',
+              totalGaps: 0,
+              nGaps: 0,
+              date: formattedDate,
+              txnCount: 0,
+              locationIn: '',
+              locationOut: '',
+              gapsList: []
+            };
+            validEvents[userId] = [];
+            allEvents[userId] = [];
+          }
+
+          dataMap[userId].qty += qty;
+          dataMap[userId].txnCount++;
+          allEvents[userId].push({ time: time, location: location });
+          validEvents[userId].push({ time: time, location: location });
+
+          if (!dataMap[userId].inTime || time < dataMap[userId].inTime) {
+            dataMap[userId].inTime = time;
+            dataMap[userId].locationIn = location || '';
+          }
+          if (!dataMap[userId].outTime || time > dataMap[userId].outTime) {
+            dataMap[userId].outTime = time;
+            dataMap[userId].locationOut = location || '';
+          }
+        });
+
+        Object.keys(allEvents).forEach(userId => {
+          allEvents[userId] = allEvents[userId]
+            .filter((obj, i, arr) => arr.findIndex(o => o.time === obj.time) === i)
+            .sort((a, b) => a.time.localeCompare(b.time));
+        });
+        Object.keys(validEvents).forEach(userId => {
+          validEvents[userId] = validEvents[userId]
+            .filter((obj, i, arr) => arr.findIndex(o => o.time === obj.time) === i)
+            .sort((a, b) => a.time.localeCompare(b.time));
+        });
+
+        Object.keys(validEvents).forEach(userId => {
+          const events = validEvents[userId];
+          const userAll = allEvents[userId];
+          for (let i = 1; i < events.length; i++) {
+            const prevObj = events[i - 1];
+            const currObj = events[i];
+            const prev = prevObj.time;
+            const curr = currObj.time;
+            const diffSec = calculateSecondsDifference(prev, curr);
+            const gapHours = diffSec / 3600;
+            const intermediate = userAll.some(ev => ev.time > prev && ev.time < curr);
+            if (gapHours >= 0.0833 && !intermediate) {
+              dataMap[userId].totalGaps += gapHours;
+              dataMap[userId].nGaps += 1;
+              dataMap[userId].gapsList.push({ 
+                gapSec: diffSec, 
+                start: prev, 
+                end: curr, 
+                locationIn: prevObj.location, 
+                locationOut: currObj.location 
+              });
+            }
+          }
+        });
+
+        Object.keys(dataMap).forEach(userId => {
+          const data = dataMap[userId];
+          if (!data.inTime || !data.outTime) {
+            delete dataMap[userId];
+            return;
+          }
+          const totalHoursDecimal = calculateSecondsDifference(data.inTime, data.outTime) / 3600;
+          data.totalHours = formatDecimalToTime(totalHoursDecimal);
+
+          if (totalHoursDecimal <= 0) {
+            data.performance = "No Activity (0.00%)";
+            data.performanceClass = "performance-no-activity";
+          } else {
+            const performance = data.qty > 0 ? (data.qty / (totalHoursDecimal * trackerTarget)) * 100 : 0;
+            if (performance >= 100) {
+              data.performance = `Well Done (${performance.toFixed(2)}%)`;
+              data.performanceClass = "performance-well-done";
+            } else if (performance >= 85) {
+              data.performance = `Almost There (${performance.toFixed(2)}%)`;
+              data.performanceClass = "performance-almost-there";
+            } else if (performance > 0) {
+              data.performance = `Poor (${performance.toFixed(2)}%)`;
+              data.performanceClass = "performance-poor";
+            } else {
+              data.performance = "No Activity (0.00%)";
+              data.performanceClass = "performance-no-activity";
+            }
+          }
+          data.txnCount = validEvents[userId].length;
+        });
+
+        localStorage.setItem('retailPickData', JSON.stringify(dataMap));
+        updateTable(dataMap);
+        updateStats(dataMap);
+        updateGapsTable(dataMap);
+      } catch (error) {
+        console.error("Error processing CSV:", error);
+      }
+    }
+
+    function downloadExcelReport() {
+      const savedData = localStorage.getItem('retailPickData');
+      if (!savedData) {
+        alert('No data to download. Please upload a file first.');
+        return;
+      }
+      
+      const dataMap = JSON.parse(savedData);
+      const header = ['Date', 'User ID', 'Qty', 'In Time', 'Out Time', 'Total Hours', 'Prod. Hours', 'Performance', 'Total Gaps', 'N. Gaps', 'Qty. Tnx', 'Gap vs Txn%', 'Avg. P. Hours'];
+      const allData = [header.slice()];
+      const wellDoneData = [header.slice()];
+      const almostThereData = [header.slice()];
+      const poorData = [header.slice()];
+  
+      Object.entries(dataMap).forEach(([userId, stats]) => {
+        const { qty, inTime, outTime, totalHours, performance, totalGaps, nGaps, date, txnCount } = stats;
+        const prodHours = formatDecimalToTime(qty / trackerTarget);
+        const gapTxnPercent = txnCount ? ((nGaps / txnCount) * 100).toFixed(2) + "%" : "0.00%";
+        const totalHoursDecimal = timeToSeconds(totalHours) / 3600;
+        const avgPHours = totalHoursDecimal > 0 ? (qty / totalHoursDecimal).toFixed(2) : "0";
+        
+        const row = [
+          date,
+          userId,
+          qty,
+          inTime,
+          outTime,
+          totalHours,
+          prodHours,
+          performance,
+          formatDecimalToTime(totalGaps),
+          nGaps,
+          txnCount,
+          gapTxnPercent,
+          avgPHours
+        ];
+        allData.push(row);
+        if (performance.includes('Well Done')) {
+          wellDoneData.push(row);
+        } else if (performance.includes('Almost There')) {
+          almostThereData.push(row);
+        } else if (performance.includes('Poor')) {
+          poorData.push(row);
+        }
+      });
+      
+      const gapsHeader = ['Date', 'User ID', 'Location IN', 'Location OUT', 'In Time', 'Out Time', 'Gap Time', 'Gap #'];
+      const gapsData = [gapsHeader.slice()];
+      Object.entries(dataMap).forEach(([userId, stats]) => {
+        if (stats.nGaps > 0 && stats.gapsList && stats.gapsList.length > 0) {
+          stats.gapsList.forEach((gapObj, index) => {
+            const gapTimeFormatted = formatDecimalToTime(gapObj.gapSec / 3600);
+            const row = [
+              stats.date,
+              userId,
+              gapObj.locationIn || '',
+              gapObj.locationOut || '',
+              gapObj.start,
+              gapObj.end,
+              gapTimeFormatted,
+              index + 1
+            ];
+            gapsData.push(row);
+          });
+        }
+      });
+  
+      const workbook = XLSX.utils.book_new();
+      const wsAll = XLSX.utils.aoa_to_sheet(allData);
+      const wsWellDone = XLSX.utils.aoa_to_sheet(wellDoneData);
+      const wsAlmostThere = XLSX.utils.aoa_to_sheet(almostThereData);
+      const wsPoor = XLSX.utils.aoa_to_sheet(poorData);
+      const wsGaps = XLSX.utils.aoa_to_sheet(gapsData);
+  
+      setFontSize(wsAll, 11);
+      setFontSize(wsWellDone, 11);
+      setFontSize(wsAlmostThere, 11);
+      setFontSize(wsPoor, 11);
+      setFontSize(wsGaps, 11);
+  
+      XLSX.utils.book_append_sheet(workbook, wsAll, "All Data");
+      XLSX.utils.book_append_sheet(workbook, wsWellDone, "Well Done");
+      XLSX.utils.book_append_sheet(workbook, wsAlmostThere, "Almost There");
+      XLSX.utils.book_append_sheet(workbook, wsPoor, "Poor");
+      XLSX.utils.book_append_sheet(workbook, wsGaps, "Gaps Breakdown");
+  
+      XLSX.writeFile(workbook, "Retail_Pick_Report.xlsx");
+    }
+  </script>
+
+  <!-- Bloco de Script para Filtro Dinâmico na Aba Gaps -->
+  <script>
+    (function() {
+      function applyGapsFilter() {
+        const filterValue = document.getElementById('filterUserId').value.toLowerCase();
+        const savedData = localStorage.getItem('retailPickData');
+        if (savedData) {
+          const dataMap = JSON.parse(savedData);
+          const filteredMap = {};
+          Object.keys(dataMap).forEach(userId => {
+            if (userId.toLowerCase().includes(filterValue)) {
+              filteredMap[userId] = dataMap[userId];
+            }
+          });
+          updateGapsTable(filteredMap);
+        }
+      }
+      document.getElementById('filterUserId').addEventListener('input', function() {
+        if (document.getElementById('gapsTabContent').style.display !== 'none') {
+          applyGapsFilter();
+        }
+      });
+      document.getElementById('gapsTabBtn').addEventListener('click', function() {
+        applyGapsFilter();
+      });
+    })();
+  </script>
+</body>
+</html>

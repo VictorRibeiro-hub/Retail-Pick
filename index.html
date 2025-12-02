@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -10,8 +11,21 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <style>
     /* Global Reset e Estilo do Body */
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: Arial, sans-serif; background-color: #f4f4f4; color: #333; }
+    * {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* Faz o body ocupar a altura toda e NÃO rolar */
+html, body {
+  height: 100%;
+  overflow: hidden;
+  font-family: Arial, sans-serif;
+  background-color: #f4f4f4;
+  color: #333;
+}
+
     /* Top Bar: fundo vermelho, inclui logo, navegação e info do usuário */
     .top-bar {
       background-color: #d32f2f; /* Vermelho */
@@ -40,123 +54,211 @@
       flex-grow: 1;
     }
     /* Botões de Navegação na Top Bar */
+        /* --- NAV DOS TABS (espaçamento uniforme) --- */
     .tab-nav {
       display: flex;
-      gap: 10px;
       align-items: center;
+      column-gap: 8px;        /* espaço entre botões */
     }
+
+    /* --- BOTÃO DE TAB (tamanho e alinhamento consistentes) --- */
     .tab-btn {
       background: transparent;
       border: none;
       color: #fff;
+      position: relative;
       cursor: pointer;
-      padding: 5px 8px;
-      transition: color 0.3s;
+      padding: 8px 12px;      /* mais confortável */
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;               /* espaço entre ícone e texto */
+      min-width: 112px;       /* todos com base semelhante */
+      transition: color 0.3s, background 0.3s;
     }
+
+    /* Texto no hover, sem empurrar o layout */
     .tab-btn .btn-text {
-      opacity: 0;
-      margin-left: 5px;
       font-size: 14px;
       color: yellow;
-      transition: opacity 0.3s;
+      opacity: 0;
+      max-width: 0;           /* não ocupa espaço quando escondido */
+      overflow: hidden;
+      transition: max-width 0.25s ease, opacity 0.25s ease;
     }
+
     .tab-btn:hover .btn-text {
       opacity: 1;
+      max-width: 80px;        /* suficiente para "Home", "Gaps" */
     }
+
+    /* Hover com leve realce */
+    .tab-btn:hover {
+      background: rgba(255,255,255,0.12);
+      border-radius: 8px;
+    }
+
+    /* Aba ativa: destaque */
+    .tab-btn.active {
+      background: rgba(255,255,255,0.18);
+      border-radius: 8px;
+      box-shadow: 0 0 0 2px rgba(255,255,255,0.25) inset;
+    }
+    .tab-btn.active i {
+      filter: drop-shadow(0 1px 2px rgba(0,0,0,0.4));
+    }
+
+    .tab-btn:focus-visible .btn-text {
+      opacity: 1;
+      max-width: 80px;
+    }
+    .tab-btn:focus-visible {
+      outline: 2px solid rgba(255,255,255,0.35);
+      border-radius: 8px;
+    }
+
     .user-info {
       font-size: 12px;
       font-weight: normal;
       opacity: 0.9;
     }
-    /* Sidebar: fixa à esquerda, alinhada logo abaixo da top bar */
+        /* Sidebar: fixa à esquerda, alinhada logo abaixo da top bar (estilo alinhado ao Online) */
     .sidebar {
       position: fixed;
-      top: 80px; /* Inicia logo abaixo da top bar */
+      top: 70px;              /* alinhado com o modelo Online */
       left: 0;
       bottom: 0;
       width: 240px;
-      background-color: #000; /* Fundo preto */
-      padding: 35px 20px 20px 20px;
+      background-color: #000;
+      padding: 30px 20px 20px 20px;
       display: flex;
       flex-direction: column;
-      gap: 15px;
+      gap: 8px;
       box-shadow: 3px 0 8px rgba(0, 0, 0, 0.3);
       color: #fff;
       z-index: 900;
     }
-    /* Removido o logo da sidebar */
-    /* Estilo comum para os botões de ação (Choose CSV File e Download XLSX) */
-    .sidebar .action-btn {
-      display: inline-block;
-      padding: 10px 20px;
-      font-size: 14px;         /* Tamanho de fonte 14px */
-      font-weight: normal;     /* Sem bold */
-      color: #fff;
-      background-color: #333;  /* Fundo neutro (cinza escuro) */
+
+    /* Botões/labels da sidebar com estilo unificado (igual ao Online) */
+    .sidebar .file-label,
+    .sidebar button {
+      text-decoration: none;
+      font-size: 16px;
+      padding: 8px;
       border: none;
-      border-radius: 5px;
+      background: transparent;
+      color: #fff;
+      text-align: left;
       cursor: pointer;
-      text-align: center;
       transition: background 0.3s, padding-left 0.3s;
+      display: flex;
+      align-items: center;
+      gap: 8px;
     }
-    .sidebar .action-btn:hover {
-      background-color: #222;
+
+    .sidebar .file-label:hover,
+    .sidebar button:hover {
+      background: rgba(255, 255, 255, 0.2);
       padding-left: 20px;
     }
+
     /* Esconde o input real de arquivo */
     #csvFileInput { display: none; }
-    /* Summary Cards na Sidebar com títulos e números separados */
-    .sidebar .summary-card {
-      padding: 10px 20px;
-      background-color: #333;
-      border-radius: 5px;
+
+    /* Summary Cards no mesmo estilo visual do Online Tracker */
+    .summary-card {
+      background-color: #1a1a1a;
+      color: #fff;
+      padding: 10px;
+      border-radius: 6px;
       text-align: center;
-      transition: background 0.3s;
+      font-size: 14px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+      margin-top: 8px;
     }
-    .sidebar .summary-card:hover {
-      background-color: #222;
-    }
-    .sidebar .summary-card .summary-title {
-      font-size: 14px;       /* Tamanho de fonte do título */
-      font-weight: normal;
-      color: #fff;           /* Título em branco */
-    }
-    .sidebar .summary-card .summary-number {
-      font-size: 20px;       /* Tamanho de fonte maior para o número */
+
+    .summary-number {
+      font-size: 20px;
       font-weight: bold;
-      color: #ffc107;        /* Cor dourada */
-      margin-top: 5px;
+      margin-top: 4px;
+      color: #ffc107;
     }
-    /* Main Content: margem à esquerda para não sobrepor a sidebar e abaixo da top bar */
-    .main-content {
-      margin-left: 240px;  /* Largura da sidebar */
-      margin-top: 55px;    /* Altura da top bar */
-      padding: 20px;
-      overflow-y: auto;    /* Adiciona rolagem vertical */
-      height: calc(100vh - 80px); /* Altura total menos a altura da top bar */
-    }
+
+    /* Main Content: deixa o scroll para o body (como no código acabado) */
+.main-content {
+  margin-left: 240px;  /* Largura da sidebar */
+  margin-top: 45px;    /* Altura da top bar */
+  padding: 20px;
+  overflow-y: auto;    /* Adiciona rolagem vertical */
+  height: calc(100vh - 80px); /* Altura total menos a altura da top bar */
+}
     /* Conteúdo das Abas (Home e Gaps) */
     #homeTabContent, #gapsTabContent { margin-top: 20px; }
     /* Tabelas */
-   table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-  th, td {
-    padding: 10px;
-    text-align: center;
-    border: 1px solid #ddd;
-    word-wrap: break-word;
-  }
+   /* Tabelas */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 5px;                 /* igual ao tracker Online */
+  background-color: #fff;          /* fundo branco nas tabelas */
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1); /* leve sombra */
+}
 
-  /* Cabeçalho das Tabelas: fundo preto, texto branco */
-  /* Cabeçalho das Tabelas: fundo preto, texto branco */
-#productivityTable thead tr:first-child th,
-#gapsTable          thead tr:first-child th {
+th, td {
+  padding: 5px;                    /* ↓ menor altura das linhas */
+  text-align: center;
+  border: 1px solid #ddd;
+  word-wrap: break-word;
+  line-height: 1.3;                /* deixa o texto mais “compacto” */
+}
+
+/* Sombreado ao passar o mouse nas linhas (Home + Gaps) */
+tbody tr:hover {
+  background-color: #f1f1f1;
+}
+
+   /* =============================
+   HEADER FIXO - HOME & GAPS
+   ============================= */
+
+/* HOME: 1ª linha do cabeçalho (títulos) */
+#productivityTable thead tr:nth-child(1) th {
+  position: sticky;
+  top: 18px;                    /* ↓ em vez de 0 */
+  z-index: 5;
   background-color: #000;
   color: #fff;
-  position: sticky;
-  top: 0;
-  z-index: 2;
-  font-size: 13px;   /* ↓ NOVO — diminui só a fonte do cabeçalho */
+  font-size: 13px;
+  padding: 6px;
+  border-bottom: 2px solid #333;
 }
+
+/* HOME: 2ª linha do cabeçalho (filtros) */
+#productivityTable thead tr.filter-row th {
+  position: sticky;
+  top: 40px;                   /* ↓ 32 + 8 para manter o espaçamento */
+  z-index: 4;
+  background-color: #111;
+}
+
+/* GAPS: linha de títulos */
+#gapsTable thead tr:nth-child(1) th {
+  position: sticky;
+  top: 18px;                    /* ↓ em vez de 0 */
+  z-index: 5;
+  background-color: #000;
+  color: #fff;
+  font-size: 13px;
+  padding: 6px;
+  border-bottom: 2px solid #333;
+}
+
+/* Sombra suave abaixo do cabeçalho */
+#productivityTable thead,
+#gapsTable thead {
+  box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+}
+
 
   /* ← Aqui, logo abaixo: */
   /* Ajuste para coluna Performance sem deformar o layout */
@@ -183,6 +285,12 @@
       border: 1px solid #ccc;
       border-radius: 3px;
     }
+/* Só o input + select da coluna User ID (2ª coluna da linha de filtros) */
+.filter-row th:nth-child(2) input,
+.filter-row th:nth-child(2) select {
+  width: 70%;      /* antes era 90% ou 80% */
+}
+
     /* Corpo das Tabelas: tamanho da fonte dos dados */
     #productivityTable tbody td,
     #gapsTable tbody td {
@@ -193,6 +301,101 @@
     .performance-poor { color: #dc3545; font-weight: bold; }
     .performance-almost-there { color: #ff8c00; font-weight: bold; }
     .performance-no-activity { color: #000; font-weight: bold; }
+/* === PREMIUM KPI CARDS === */
+
+.kpi-card {
+  width: 100%;                 /* impede o card de ficar largo demais */
+  max-width: 200px;            /* limite visual, igual aos summary cards */
+  margin: 0 auto;              /* centraliza o card dentro da sidebar */
+  background-color: #111;
+  padding: 12px;
+  border-radius: 8px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  word-wrap: break-word;       /* impede que o texto empurre o card */
+}
+
+.kpi-card .summary-icon {
+  font-size: 20px;
+  margin-bottom: 4px;
+}
+
+.kpi-card .summary-title {
+  font-size: 13px;
+  line-height: 14px;
+  font-weight: normal;
+  color: #fff;
+}
+
+.kpi-card .summary-number {
+  font-size: 20px;
+  font-weight: bold;
+  color: #ffc107;
+}
+/* ROW COM DOIS KPIS LADO A LADO */
+.kpi-row {
+  width: 100%;
+  max-width: 200px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background-color: #111;
+  padding: 10px 6px;
+  border-radius: 8px;
+}
+
+/* Cards pequenos (lado a lado) */
+.kpi-card-small {
+  flex: 1;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.kpi-card-small .summary-icon {
+  font-size: 18px;
+  margin-bottom: 3px;
+}
+
+.kpi-card-small .summary-title {
+  font-size: 11px;
+  line-height: 13px;
+  color: #fff;
+}
+
+.kpi-card-small .summary-number {
+  font-size: 18px;
+  font-weight: bold;
+  color: #ffc107;
+}
+
+/* Risquinho vertical */
+.kpi-separator {
+  width: 1px;
+  height: 40px;
+  background-color: rgba(255,255,255,0.25);
+  margin: 0 6px;
+  border-radius: 2px;
+}
+/* === GAPS COLOR RULES (same floor vs diff floor) === */
+.gap-same-floor {
+  background-color: rgba(0, 255, 0, 0.12);  /* mais suave */
+}
+
+.gap-diff-floor {
+  background-color: rgba(220, 53, 69, 0.18); /* vermelho claro suave */
+}
+
+.gap-critical {
+  font-weight: bold;
+  color: #dc3545; /* vermelho forte */
+}
+
   </style>
 </head>
 <body>
@@ -225,12 +428,12 @@
       <i class="fa fa-download"></i> Download XLSX
     </button>
     <!-- Summary Cards com títulos (em branco) e números (em dourado) -->
-    <div class="summary-card">
+        <div class="summary-card">
       <div class="summary-title">Total User ID</div>
       <div class="summary-number" id="userCountLabel">0</div>
     </div>
     <div class="summary-card">
-      <div class="summary-title">T. User ID Lost</div>
+      <div class="summary-title">User-equivalents Lost (≈)</div>
       <div class="summary-number" id="userLostLabel">0.00</div>
     </div>
     <div class="summary-card">
@@ -242,9 +445,41 @@
       <div class="summary-number" id="prodHoursLabel">00:00:00</div>
     </div>
     <div class="summary-card">
-      <div class="summary-title">Diferença</div>
+      <div class="summary-title">Total Gaps</div>
       <div class="summary-number" id="differenceLabel">00:00:00</div>
     </div>
+<!-- ===== NEW PREMIUM KPI CARDS ===== -->
+
+<!-- ===== KPI ROW: TOTAL & AVG PICKED ===== -->
+<div class="kpi-row">
+  <div class="kpi-card-small">
+    <div class="summary-icon">📦</div>
+    <div class="summary-title">Total Picked</div>
+    <div class="summary-number" id="totalPickedLabel">0</div>
+  </div>
+
+  <div class="kpi-separator"></div>
+
+  <div class="kpi-card-small">
+    <div class="summary-icon">📊</div>
+    <div class="summary-title">Avg. Pick/h</div>
+    <div class="summary-number" id="avgPickedLabel">0</div>
+  </div>
+</div>
+<!-- NEW: Avg. Performance -->
+<div class="summary-card kpi-card">
+  <div class="summary-icon">📈</div>
+  <div class="summary-title">Avg. Performance</div>
+  <div class="summary-number" id="avgPerformanceLabel">0%</div>
+</div>
+
+<!-- Median Performance (IQR) -->
+<div class="summary-card kpi-card">
+  <div class="summary-icon">📉</div>
+  <div class="summary-title">Median Performance</div>
+  <div class="summary-number" id="medianPerformanceLabel">0%</div>
+</div>
+
   </nav>
   <!-- Main Content -->
   <div class="main-content">
@@ -269,30 +504,40 @@
           </tr>
           <!-- Linha de Filtros Integrada no Cabeçalho -->
           <tr class="filter-row">
-            <th></th>
-            <th>
-              <input type="text" id="filterUserId" placeholder="Filter by User ID" />
-            </th>
-            <th></th>
-            <th></th>
-            <th></th>
-            <th></th>
-            <th></th>
-            <th>
-              <select id="filterPerformance">
-                <option value="">All</option>
-                <option value="Well Done">Well Done</option>
-                <option value="Almost There">Almost There</option>
-                <option value="Poor">Poor</option>
-                <option value="No Activity">No Activity</option>
-              </select>
-            </th>
-            <th></th>
-            <th></th>
-            <th></th>
-            <th></th>
-            <th></th>
-          </tr>
+  <th></th>
+  <th>
+    <input
+      type="text"
+      id="filterUserId"
+      placeholder="Filter by User ID"
+      style="margin-bottom: 4px;"
+    />
+    <select id="filterUserType">
+      <option value="">All</option>
+      <option value="core">Core</option>
+      <option value="agy">AGY</option>
+    </select>
+  </th>
+  <th></th>
+  <th></th>
+  <th></th>
+  <th></th>
+  <th></th>
+  <th>
+    <select id="filterPerformance">
+      <option value="">All</option>
+      <option value="Well Done">Well Done</option>
+      <option value="Almost There">Almost There</option>
+      <option value="Poor">Poor</option>
+      <option value="No Activity">No Activity</option>
+    </select>
+  </th>
+  <th></th>
+  <th></th>
+  <th></th>
+  <th></th>
+  <th></th>
+</tr>
         </thead>
         <tbody>
           <!-- Linhas dinâmicas geradas pela lógica -->
@@ -377,19 +622,69 @@
       }
       return date;
     }
+// Agora não reformatamos a data — vem pronta do CSV novo
+// (no teu código atual podes manter o teu formatDate, isto é só referência)
+function getFloor(location) {
+  if (!location) return null;
+  const loc = location.toUpperCase().trim();
+
+  // Locs especiais tratados como "ground"
+  if (loc.startsWith('DROP'))   return 'ground';
+  if (loc.startsWith('CONSOL')) return 'ground';
+
+  const letter = loc.charAt(0);
+  const floorMap = {
+    X: 'ground', Z: 'ground', A: 'ground', E: 'ground', P: 'ground', F: 'ground',
+    B: 'bFloor', V: 'bFloor',
+    D: 'dFloor', C: 'dFloor',
+    T: 'tFloor', H: 'tFloor'
+  };
+  return floorMap[letter] || 'unknown';
+}
+
+function getUserType(userId) {
+  const uid = (userId || "").toString().trim().toUpperCase();
+
+  // AGY = começa por "AGY"
+  if (uid.startsWith("AGY")) {
+    return "agy";
+  }
+
+  // CORE = tudo o resto
+  return "core";
+}
+
 
     /* ======================================================
      * Funções de Troca de Aba
      * ====================================================== */
-    function showHomeTab() {
-      document.getElementById('homeTabContent').style.display = 'block';
-      document.getElementById('gapsTabContent').style.display = 'none';
+    function setActiveTab(btnId) {
+      const allBtns = document.querySelectorAll('.tab-btn');
+      allBtns.forEach(b => b.classList.remove('active'));
+      const btn = document.getElementById(btnId);
+      if (btn) btn.classList.add('active');
     }
 
-    function showGapsTab() {
-      document.getElementById('homeTabContent').style.display = 'none';
-      document.getElementById('gapsTabContent').style.display = 'block';
+        function showHomeTab() {
+      document.getElementById('homeTabContent').style.display = 'block';
+      document.getElementById('gapsTabContent').style.display = 'none';
+      setActiveTab('homeTabBtn');
     }
+
+   function showGapsTab() {
+  document.getElementById('homeTabContent').style.display = 'none';
+  document.getElementById('gapsTabContent').style.display = 'block';
+  setActiveTab('gapsTabBtn');
+
+  const savedData = localStorage.getItem('retailPickData');
+  if (savedData) {
+    const dataMap = JSON.parse(savedData);
+    applyFilters(dataMap);  // reaplica todos os filtros e atualiza a Gaps
+  }
+}
+
+
+
 
     /* ======================================================
      * Atualização da Tabela Home
@@ -429,74 +724,182 @@
      * Atualização da Tabela Gaps
      * ====================================================== */
     function updateGapsTable(dataMap) {
-      const gapsTableBody = document.querySelector('#gapsTable tbody');
-      gapsTableBody.innerHTML = '';
-      
-      Object.entries(dataMap).forEach(([userId, stats]) => {
-        if (stats.nGaps > 0 && stats.gapsList && stats.gapsList.length > 0) {
-          stats.gapsList.forEach((gapObj, index) => {
-            const gapTimeFormatted = formatDecimalToTime(gapObj.gapSec / 3600);
-            const row = document.createElement('tr');
-            row.innerHTML = `
-              <td>${stats.date || ''}</td>
-              <td>${userId}</td>
-              <td>${gapObj.locationIn || ''}</td>
-              <td>${gapObj.locationOut || ''}</td>
-              <td>${gapObj.start || 'N/A'}</td>
-              <td>${gapObj.end || 'N/A'}</td>
-              <td>${gapTimeFormatted}</td>
-              <td>${index + 1}</td>
-            `;
-            gapsTableBody.appendChild(row);
-          });
+  const gapsTableBody = document.querySelector('#gapsTable tbody');
+  gapsTableBody.innerHTML = '';
+
+  Object.entries(dataMap).forEach(([userId, stats]) => {
+    if (stats.nGaps > 0 && stats.gapsList && stats.gapsList.length > 0) {
+      stats.gapsList.forEach((gapObj, index) => {
+        const gapMinutes = gapObj.gapSec / 60;
+        const gapTimeFormatted = formatDecimalToTime(gapObj.gapSec / 3600);
+
+        // Usa a mesma lógica do código acabado
+        const floorIn  = getFloor(gapObj.locationIn);
+        const floorOut = getFloor(gapObj.locationOut);
+        const sameFloor = floorIn && floorOut && floorIn === floorOut;
+
+        let rowClass = '';
+        let gapCellClass = '';
+
+        if (sameFloor) {
+          // Linha sempre verde claro no mesmo floor
+          rowClass = 'gap-same-floor';
+
+          // Gap Time (mesmo floor):
+          // < 5 min        → normal
+          // 5–7 min        → normal (mantém fonte)
+          // > 7 min        → bold + vermelho
+          if (gapMinutes > 7) {
+            gapCellClass = 'gap-critical';
+          }
+        } else {
+          // Linha sempre vermelha clara entre pisos
+          rowClass = 'gap-diff-floor';
+
+          // Gap Time (floors diferentes):
+          // < 10 min       → normal
+          // 10–12 min      → normal
+          // > 12 min       → bold + vermelho
+          if (gapMinutes > 12) {
+            gapCellClass = 'gap-critical';
+          }
         }
+
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${stats.date || ''}</td>
+          <td>${userId}</td>
+          <td>${gapObj.locationIn || ''}</td>
+          <td>${gapObj.locationOut || ''}</td>
+          <td>${gapObj.start || 'N/A'}</td>
+          <td>${gapObj.end || 'N/A'}</td>
+          <td class="${gapCellClass}">${gapTimeFormatted}</td>
+          <td>${index + 1}</td>
+        `;
+
+        if (rowClass) {
+          row.classList.add(rowClass);
+        }
+
+        gapsTableBody.appendChild(row);
       });
     }
-
+  });
+}
     /* ======================================================
      * Atualização das Estatísticas
      * ====================================================== */
-    function updateStats(dataMap) {
-      let sumWorkedHours = 0;
-      let sumProdHours = 0;
+        function updateStats(dataMap) {
+  let sumWorkedHours = 0;   // T.W.H (Total Worked Hours)
+  let sumProdHours   = 0;   // Prod. Hours (qty / target)
+  let totalPicked    = 0;   // Soma total de QTY
+  let sumGapsHours   = 0;   // Total Gaps (em horas decimais)
 
-      Object.values(dataMap).forEach(stats => {
-        const totalHoursSec = timeToSeconds(stats.totalHours);
-        sumWorkedHours += totalHoursSec / 3600;
-        const neededHours = stats.qty / trackerTarget;
-        sumProdHours += neededHours;
-      });
+  Object.values(dataMap).forEach(stats => {
+    const hoursDecimal = timeToSeconds(stats.totalHours) / 3600;
+    sumWorkedHours += hoursDecimal;
+    sumProdHours   += stats.qty / trackerTarget;
+    totalPicked    += stats.qty;
+    sumGapsHours   += stats.totalGaps || 0;
+  });
 
-      const difference = sumWorkedHours - sumProdHours;
+  // === Summary cards principais ===
+  document.getElementById('twhLabel').textContent        = formatDecimalToTime(sumWorkedHours);
+  document.getElementById('prodHoursLabel').textContent  = formatDecimalToTime(sumProdHours);
+  document.getElementById('differenceLabel').textContent = formatDecimalToTime(sumGapsHours); // Total Gaps
 
-      // Atualiza os summary cards apenas com os números
-      document.getElementById('twhLabel').textContent = formatDecimalToTime(sumWorkedHours);
-      document.getElementById('prodHoursLabel').textContent = formatDecimalToTime(sumProdHours);
-      document.getElementById('differenceLabel').textContent = formatDecimalToTime(difference);
+  const totalUsers = Object.keys(dataMap).length;
+  document.getElementById('userCountLabel').textContent = totalUsers;
 
-      const totalUsers = Object.keys(dataMap).length;
-      document.getElementById('userCountLabel').textContent = totalUsers;
-      const lostDecimal = difference / 7.5;
-      document.getElementById('userLostLabel').textContent = lostDecimal.toFixed(2);
-    }
+  const lostDecimal = sumGapsHours / 7.5;
+document.getElementById('userLostLabel').textContent = lostDecimal.toFixed(2);
+
+
+  // === KPIs do sidebar ===
+
+  // 1) Total Picked (soma de todas as QTY)
+  document.getElementById('totalPickedLabel').textContent =
+  totalPicked.toLocaleString('en-US');
+
+
+  // 2) Avg. Pick/h = Total Picked / Total Worked Hours
+  const avgPickPerHour =
+    sumWorkedHours > 0 ? (totalPicked / sumWorkedHours) : 0;
+  document.getElementById('avgPickedLabel').textContent = avgPickPerHour.toFixed(0);
+
+  // 3) Avg Performance & 4) Median Performance
+  let sumPerformance = 0;
+  const perfValues = [];
+
+  Object.values(dataMap).forEach(stats => {
+    const hours = timeToSeconds(stats.totalHours) / 3600;
+    const perf  = hours > 0 ? (stats.qty / (hours * trackerTarget)) * 100 : 0;
+    sumPerformance += perf;
+    perfValues.push(perf);
+  });
+
+  const avgPerformance =
+    totalUsers > 0 ? (sumPerformance / totalUsers) : 0;
+
+  const avgPerfEl = document.getElementById('avgPerformanceLabel');
+  if (avgPerfEl) {
+    avgPerfEl.textContent = avgPerformance.toFixed(2) + '%';
+  }
+
+  // Mediana
+  function median(arr) {
+    if (!arr || arr.length === 0) return 0;
+    const s = [...arr].sort((a, b) => a - b);
+    const mid = Math.floor(s.length / 2);
+    return (s.length % 2 === 0)
+      ? (s[mid - 1] + s[mid]) / 2
+      : s[mid];
+  }
+
+  const medianPerformance = median(perfValues);
+  const medianEl = document.getElementById('medianPerformanceLabel');
+  if (medianEl) {
+    medianEl.textContent = medianPerformance.toFixed(2) + '%';
+  }
+}
+
+
 
     /* ======================================================
      * Função de Filtragem para a Aba Home
      * ====================================================== */
     function applyFilters(dataMap) {
-      const performanceFilter = document.getElementById('filterPerformance').value;
-      const userIdFilter = document.getElementById('filterUserId').value.toLowerCase();
+  const performanceFilter = document.getElementById('filterPerformance').value;
+  const userIdFilter      = document.getElementById('filterUserId').value.toLowerCase();
+  const userTypeFilter    = document.getElementById('filterUserType').value; // "" | "core" | "agy"
 
-      const filtered = Object.entries(dataMap).filter(([userId, stats]) => {
-        const matchesPerformance = !performanceFilter || stats.performance.includes(performanceFilter);
-        const matchesUserId = !userIdFilter || userId.toLowerCase().includes(userIdFilter);
-        return matchesPerformance && matchesUserId;
-      });
+  const filtered = Object.entries(dataMap).filter(([userId, stats]) => {
+    const matchesPerformance =
+      !performanceFilter || stats.performance.includes(performanceFilter);
 
-      const filteredMap = Object.fromEntries(filtered);
-      updateTable(filteredMap);
-      updateStats(filteredMap);
-    }
+    const matchesUserId =
+      !userIdFilter || userId.toLowerCase().includes(userIdFilter);
+
+    // se stats.userType não existir, recalcula com base no próprio userId
+    const userType = stats.userType || getUserType(userId);
+    const matchesUserType =
+      !userTypeFilter || userType === userTypeFilter;
+
+    return matchesPerformance && matchesUserId && matchesUserType;
+  });
+
+  const filteredMap = Object.fromEntries(filtered);
+
+  // Home
+  updateTable(filteredMap);
+  updateStats(filteredMap);
+
+  // Gaps sincronizado com os mesmos filtros
+  updateGapsTable(filteredMap);
+}
+
+
+
 
     /* ======================================================
      * Função para ajustar o tamanho da fonte nas células do XLSX
@@ -520,21 +923,31 @@
     document.getElementById('gapsTabBtn').addEventListener('click', showGapsTab);
     // Eventos para os filtros integrados
     document.getElementById('filterPerformance').addEventListener('change', () => {
-      const savedData = localStorage.getItem('retailPickData');
-      if (savedData) {
-        const dataMap = JSON.parse(savedData);
-        applyFilters(dataMap);
-      }
-    });
-    document.getElementById('filterUserId').addEventListener('input', () => {
-      const savedData = localStorage.getItem('retailPickData');
-      if (savedData) {
-        const dataMap = JSON.parse(savedData);
-        applyFilters(dataMap);
-      }
-    });
+  const savedData = localStorage.getItem('retailPickData');
+  if (savedData) {
+    const dataMap = JSON.parse(savedData);
+    applyFilters(dataMap);
+  }
+});
 
-    window.onload = function () {
+document.getElementById('filterUserId').addEventListener('input', () => {
+  const savedData = localStorage.getItem('retailPickData');
+  if (savedData) {
+    const dataMap = JSON.parse(savedData);
+    applyFilters(dataMap);
+  }
+});
+
+document.getElementById('filterUserType').addEventListener('change', () => {
+  const savedData = localStorage.getItem('retailPickData');
+  if (savedData) {
+    const dataMap = JSON.parse(savedData);
+    applyFilters(dataMap);
+  }
+});
+
+
+        window.onload = function () {
       const savedData = localStorage.getItem('retailPickData');
       if (savedData) {
         const dataMap = JSON.parse(savedData);
@@ -542,7 +955,10 @@
         updateStats(dataMap);
         updateGapsTable(dataMap);
       }
+      // Garante que a Home esteja visível e o botão fique marcado
+      showHomeTab();
     };
+
 
     function handleFileUpload(event) {
       const file = event.target.files[0];
@@ -583,20 +999,22 @@
 
           if (!dataMap[userId]) {
             dataMap[userId] = {
-              qty: 0,
-              inTime: null,
-              outTime: null,
-              totalHours: 0,
-              performance: '',
-              performanceClass: '',
-              totalGaps: 0,
-              nGaps: 0,
-              date: formattedDate,
-              txnCount: 0,
-              locationIn: '',
-              locationOut: '',
-              gapsList: []
-            };
+  qty: 0,
+  inTime: null,
+  outTime: null,
+  totalHours: 0,
+  performance: '',
+  performanceClass: '',
+  totalGaps: 0,
+  nGaps: 0,
+  date: formattedDate,
+  txnCount: 0,
+  locationIn: '',
+  locationOut: '',
+  gapsList: [],
+  userType: getUserType(userId)
+};
+
             validEvents[userId] = [];
             allEvents[userId] = [];
           }
@@ -780,34 +1198,6 @@
   
       XLSX.writeFile(workbook, "Retail_Pick_Report.xlsx");
     }
-  </script>
-
-  <!-- Bloco de Script para Filtro Dinâmico na Aba Gaps -->
-  <script>
-    (function() {
-      function applyGapsFilter() {
-        const filterValue = document.getElementById('filterUserId').value.toLowerCase();
-        const savedData = localStorage.getItem('retailPickData');
-        if (savedData) {
-          const dataMap = JSON.parse(savedData);
-          const filteredMap = {};
-          Object.keys(dataMap).forEach(userId => {
-            if (userId.toLowerCase().includes(filterValue)) {
-              filteredMap[userId] = dataMap[userId];
-            }
-          });
-          updateGapsTable(filteredMap);
-        }
-      }
-      document.getElementById('filterUserId').addEventListener('input', function() {
-        if (document.getElementById('gapsTabContent').style.display !== 'none') {
-          applyGapsFilter();
-        }
-      });
-      document.getElementById('gapsTabBtn').addEventListener('click', function() {
-        applyGapsFilter();
-      });
-    })();
   </script>
 </body>
 </html>

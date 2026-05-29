@@ -747,6 +747,111 @@ td.ticket-change-cell::after {
 #dashboardTabContent .tab-bottom-spacer {
   height: 10px;
 }
+    /* ======================================================
+   SUMMARY COMPACT VIEW - FIT SCREEN
+   Mantém a lógica 100% igual, ajusta apenas o layout
+   ====================================================== */
+
+/* Reduz espaçamentos gerais da aba Summary */
+#summaryTabContent {
+  margin-top: 8px;
+  padding-bottom: 20px;
+}
+
+/* Título principal mais compacto */
+#summaryTabContent > .retail-section-title {
+  margin: 6px 0 8px;
+  font-size: 16px;
+}
+
+/* Blocos CORE / AGY mais baixos */
+#summaryTabContent .summary-block {
+  padding: 8px 12px;
+  margin-bottom: 10px;
+  border-radius: 9px;
+}
+
+/* Título CORE / AGY mais compacto */
+#summaryTabContent .summary-block-title {
+  font-size: 15px;
+  margin-bottom: 7px;
+}
+
+/* Grid dos cards CORE / AGY com menos espaço */
+#summaryTabContent .retail-summary-grid {
+  gap: 8px;
+  margin-bottom: 0;
+}
+
+/* Cards CORE / AGY mais baixos */
+#summaryTabContent .retail-summary-card {
+  padding: 9px 8px;
+  border-radius: 8px;
+}
+
+/* Texto dos cards */
+#summaryTabContent .retail-summary-card .card-title {
+  font-size: 12px;
+  margin-bottom: 3px;
+}
+
+/* Valores dos cards */
+#summaryTabContent .retail-summary-card .card-value {
+  font-size: 20px;
+}
+
+/* Linha dos gráficos mais compacta */
+#summaryTabContent .retail-chart-row {
+  gap: 12px;
+  margin: 10px 0 10px;
+}
+
+/* Cards dos gráficos mais baixos */
+#summaryTabContent .retail-chart-card {
+  min-height: 285px;
+  padding: 10px 12px;
+}
+
+/* Título dos gráficos */
+#summaryTabContent .retail-chart-card h4 {
+  margin: 2px 0 6px;
+  font-size: 14px;
+}
+
+/* Altura dos gráficos Summary */
+#summaryTabContent .retail-chart-card canvas {
+  height: 230px !important;
+}
+
+/* Tabelas de buckets mais compactas */
+#summaryTabContent .retail-dashboard-tables {
+  gap: 12px;
+  margin-top: 6px;
+}
+
+/* Títulos das tabelas */
+#summaryTabContent .retail-dashboard-tables .retail-section-title {
+  margin: 6px 0 4px;
+  font-size: 15px;
+}
+
+/* Cabeçalho das tabelas */
+#summaryTabContent .retail-mini-table th {
+  font-size: 12px;
+  padding: 5px;
+}
+
+/* Linhas das tabelas */
+#summaryTabContent .retail-mini-table td {
+  font-size: 12px;
+  padding: 4px;
+  line-height: 1.15;
+}
+
+/* Remove espaço extra no fim do Summary */
+#summaryTabContent .tab-bottom-spacer {
+  height: 5px;
+}
   </style>
 </head>
 <body>

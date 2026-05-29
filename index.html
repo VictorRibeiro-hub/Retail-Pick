@@ -293,10 +293,30 @@ tbody tr:hover {
       border: 1px solid #ccc;
       border-radius: 3px;
     }
-/* Só o input + select da coluna User ID (2ª coluna da linha de filtros) */
-.filter-row th:nth-child(2) input,
-.filter-row th:nth-child(2) select {
-  width: 70%;      /* antes era 90% ou 80% */
+/* Filtros lado a lado na coluna User ID */
+.user-filter-inline {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+}
+
+.user-filter-inline input {
+  width: 62% !important;
+  min-width: 120px;
+}
+
+.user-filter-inline select {
+  width: 34% !important;
+  min-width: 70px;
+}
+
+.user-filter-inline input,
+.user-filter-inline select {
+  padding: 5px;
+  font-size: 12px;
+  height: 28px;
 }
 
     /* Corpo das Tabelas: tamanho da fonte dos dados */
@@ -746,18 +766,20 @@ td.ticket-change-cell::after {
           <tr class="filter-row">
   <th></th>
   <th>
+  <div class="user-filter-inline">
     <input
       type="text"
       id="filterUserId"
       placeholder="Filter by User ID"
-      style="margin-bottom: 4px;"
     />
+
     <select id="filterUserType">
       <option value="">All</option>
       <option value="core">Core</option>
       <option value="agy">AGY</option>
     </select>
-  </th>
+  </div>
+</th>
   <th></th>
   <th></th>
   <th></th>

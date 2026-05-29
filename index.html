@@ -646,7 +646,107 @@ td.ticket-change-cell::after {
   width: 100% !important;
   height: 100% !important;
 }
+/* ======================================================
+   DASHBOARD COMPACT VIEW - FIT SCREEN
+   Mantém a lógica 100% igual, ajusta apenas o layout
+   ====================================================== */
 
+/* Reduz espaçamentos gerais apenas no Dashboard */
+#dashboardTabContent {
+  margin-top: 8px;
+  padding-bottom: 20px;
+}
+
+/* Título do Dashboard mais compacto */
+#dashboardTabContent > .retail-section-title {
+  margin: 6px 0 8px;
+  font-size: 16px;
+}
+
+/* Cards superiores mais baixos */
+#dashboardTabContent .retail-dashboard-cards {
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+#dashboardTabContent .retail-dashboard-card {
+  padding: 10px 8px;
+  border-radius: 8px;
+}
+
+#dashboardTabContent .retail-dashboard-card .card-title {
+  font-size: 12px;
+  margin-bottom: 3px;
+}
+
+#dashboardTabContent .retail-dashboard-card .card-value {
+  font-size: 20px;
+}
+
+/* Linha dos gráficos mais compacta */
+#dashboardTabContent .retail-chart-row {
+  gap: 12px;
+  margin: 8px 0 12px;
+}
+
+/* Cards dos gráficos mais baixos */
+#dashboardTabContent .retail-chart-card {
+  min-height: 285px;
+  padding: 10px 12px;
+}
+
+#dashboardTabContent .retail-chart-card h4 {
+  margin: 2px 0 6px;
+  font-size: 14px;
+}
+
+/* Pie chart mais controlado e sem distorção */
+#dashboardTabContent .retail-pie-wrap {
+  max-width: 285px;
+  aspect-ratio: 1 / 1;
+}
+
+/* Bar chart mais baixo */
+#dashboardTabContent .retail-bar-wrap {
+  height: 225px;
+}
+
+/* Pills do gráfico de barras mais compactas */
+#dashboardTabContent .retail-dashboard-counts {
+  margin: 2px 0 6px;
+  gap: 6px;
+}
+
+#dashboardTabContent .retail-count-pill {
+  font-size: 11px;
+  padding: 4px 8px;
+}
+
+/* Tabelas Top 5 mais compactas */
+#dashboardTabContent .retail-dashboard-tables {
+  gap: 12px;
+}
+
+#dashboardTabContent .retail-dashboard-tables .retail-section-title {
+  margin: 8px 0 5px;
+  font-size: 15px;
+}
+
+#dashboardTabContent .retail-mini-table th {
+  font-size: 12px;
+  padding: 5px;
+}
+
+#dashboardTabContent .retail-mini-table td {
+  font-size: 12px;
+  padding: 4px;
+  line-height: 1.15;
+}
+
+/* Remove espaço extra no fim do Dashboard */
+#dashboardTabContent .tab-bottom-spacer {
+  height: 10px;
+}
   </style>
 </head>
 <body>

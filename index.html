@@ -9,6 +9,12 @@
   <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
   <!-- FontAwesome para ícones -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <!-- PapaParse para ler corretamente CSVs BlueYonder com quebras de linha dentro das células -->
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <!-- Chart.js para gráficos da Fase 2 -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- DataLabels Plugin para mostrar valores/percentagens nos gráficos -->
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
   <style>
     /* Global Reset e Estilo do Body */
     * {
@@ -187,10 +193,12 @@ html, body {
     /* Main Content: deixa o scroll para o body (como no código acabado) */
 .main-content {
   margin-left: 240px;  /* Largura da sidebar */
-  margin-top: 45px;    /* Altura da top bar */
-  padding: 20px;
+  margin-top: 70px;    /* alinhado com a sidebar/top bar */
+  padding: 20px 20px 100px 20px;
   overflow-y: auto;    /* Adiciona rolagem vertical */
-  height: calc(100vh - 80px); /* Altura total menos a altura da top bar */
+  overflow-x: hidden;
+  height: calc(100vh - 70px); /* área útil abaixo da top bar */
+  scroll-behavior: smooth;
 }
     /* Conteúdo das Abas (Home e Gaps) */
     #homeTabContent, #gapsTabContent { margin-top: 20px; }
@@ -382,18 +390,241 @@ tbody tr:hover {
   margin: 0 6px;
   border-radius: 2px;
 }
-/* === GAPS COLOR RULES (same floor vs diff floor) === */
-.gap-same-floor {
-  background-color: rgba(0, 255, 0, 0.12);  /* mais suave */
+/* === GAPS COLOR RULES - SAME FLOOR vs CROSS FLOOR === */
+/* Same floor = verde claro */
+tr.gap-same-floor td {
+  background-color: #d4edda !important;
 }
 
-.gap-diff-floor {
-  background-color: rgba(220, 53, 69, 0.18); /* vermelho claro suave */
+/* Different floor = vermelho claro */
+tr.gap-cross-floor td {
+  background-color: #f8d7da !important;
 }
 
+/* Gap time crítico = texto vermelho e bold */
 .gap-critical {
   font-weight: bold;
-  color: #dc3545; /* vermelho forte */
+  color: #dc3545 !important;
+}
+
+/* Mantém o hover suave sem destruir totalmente a lógica visual */
+tr.gap-same-floor:hover td {
+  background-color: #c3e6cb !important;
+}
+
+tr.gap-cross-floor:hover td {
+  background-color: #f5c6cb !important;
+}
+
+/* Ticket change marker: bold + asterisks on Location IN/OUT */
+td.ticket-change-cell {
+  font-weight: bold;
+  position: relative;
+}
+
+td.ticket-change-cell::before,
+td.ticket-change-cell::after {
+  content: "*";
+  font-weight: bold;
+  margin: 0 5px;
+}
+
+/* ======================================================
+   PHASE 1 - DASHBOARD & SUMMARY TABS - RETAIL TRACKER
+   Cards and tables only, no charts
+   ====================================================== */
+
+#dashboardTabContent,
+#summaryTabContent {
+  margin-top: 20px;
+}
+
+.retail-dashboard-cards,
+.retail-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.retail-dashboard-card,
+.retail-summary-card {
+  background-color: #111;
+  color: #fff;
+  border-radius: 10px;
+  padding: 14px 12px;
+  text-align: center;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.18);
+}
+
+.retail-dashboard-card .card-title,
+.retail-summary-card .card-title {
+  font-size: 13px;
+  opacity: 0.9;
+  margin-bottom: 6px;
+}
+
+.retail-dashboard-card .card-value,
+.retail-summary-card .card-value {
+  font-size: 22px;
+  font-weight: bold;
+  color: #ffc107;
+}
+
+.retail-section-title {
+  margin: 18px 0 8px;
+  font-size: 17px;
+  font-weight: bold;
+  color: #222;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.retail-dashboard-tables {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
+}
+
+.retail-mini-table {
+  width: 100%;
+  border-collapse: collapse;
+  background-color: #fff;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.retail-mini-table th {
+  background-color: #000;
+  color: #fff;
+  font-size: 13px;
+  padding: 6px;
+}
+
+.retail-mini-table td {
+  font-size: 13px;
+  padding: 6px;
+  border: 1px solid #ddd;
+  text-align: center;
+}
+
+.summary-block {
+  background: #fff;
+  border-radius: 10px;
+  padding: 12px;
+  margin-bottom: 16px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+
+.summary-block-title {
+  font-weight: bold;
+  font-size: 16px;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.summary-core-title {
+  color: #28a745;
+}
+
+.summary-agy-title {
+  color: #ff8c00;
+}
+
+/* ======================================================
+   PHASE 2 - CHARTS - RETAIL TRACKER
+   Uses only Retail Tracker calculated data
+   ====================================================== */
+
+.retail-chart-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 16px;
+  margin: 12px 0 20px;
+}
+
+.retail-chart-card {
+  background: #fff;
+  border-radius: 10px;
+  padding: 12px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+  min-height: 390px;
+}
+
+.retail-chart-card h4 {
+  margin: 4px 0 12px;
+  font-size: 14px;
+  letter-spacing: 0.2px;
+  color: #222;
+}
+
+.retail-chart-card canvas {
+  width: 100% !important;
+  height: 320px !important;
+}
+
+.retail-dashboard-counts {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 4px 0 12px;
+}
+
+.retail-count-pill {
+  background: #111;
+  color: #fff;
+  border-radius: 999px;
+  padding: 5px 10px;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.retail-count-pill span {
+  color: #ffc107;
+}
+
+/* Melhor área de scroll nas abas Dashboard e Summary */
+#dashboardTabContent,
+#summaryTabContent {
+  padding-bottom: 90px;
+}
+
+.tab-bottom-spacer {
+  height: 90px;
+  flex-shrink: 0;
+}
+
+/* Ajuste do gráfico de pizza para manter formato correto */
+.retail-pie-card {
+  display: flex;
+  flex-direction: column;
+}
+
+.retail-pie-wrap {
+  width: 100%;
+  max-width: 440px;
+  aspect-ratio: 1 / 1;
+  margin: 0 auto;
+  position: relative;
+}
+
+.retail-pie-wrap canvas {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.retail-bar-wrap {
+  position: relative;
+  width: 100%;
+  height: 320px;
+}
+
+.retail-bar-wrap canvas {
+  width: 100% !important;
+  height: 100% !important;
 }
 
   </style>
@@ -411,8 +642,17 @@ tbody tr:hover {
       <button class="tab-btn" id="homeTabBtn" data-target="homeTabContent" title="Home">
         <i class="fa fa-home"></i><span class="btn-text">Home</span>
       </button>
+
       <button class="tab-btn" id="gapsTabBtn" data-target="gapsTabContent" title="Gaps">
         <i class="fa fa-chart-bar"></i><span class="btn-text">Gaps</span>
+      </button>
+
+      <button class="tab-btn" id="dashboardTabBtn" data-target="dashboardTabContent" title="Dashboard">
+        <i class="fa fa-chart-pie"></i><span class="btn-text">Dashboard</span>
+      </button>
+
+      <button class="tab-btn" id="summaryTabBtn" data-target="summaryTabContent" title="Summary">
+        <i class="fa fa-users"></i><span class="btn-text">Summary</span>
       </button>
     </div>
     <div class="user-info">Victor Ribeiro DHL(Supply Chain)</div>
@@ -556,14 +796,254 @@ tbody tr:hover {
         <th>Out Time</th>
         <th>Gap Time</th>
         <th>Gap #</th>
+        <th>Same Floor?</th>
       </tr>
       <!-- Linha de Filtros Integrada no Cabeçalho REMOVIDA -->
     </thead>
     <tbody>
-          <!-- Linhas dinâmicas geradas pela lógica -->
-        </tbody>
+      <!-- Linhas dinâmicas geradas pela lógica -->
+    </tbody>
+  </table>
+</div>
+
+<!-- Dashboard Tab - Phase 1 -->
+<div id="dashboardTabContent" style="display: none;">
+  <div class="retail-section-title">
+    <i class="fa fa-chart-pie"></i> Retail Pick Dashboard
+  </div>
+
+  <div class="retail-dashboard-cards">
+    <div class="retail-dashboard-card">
+      <div class="card-title">Total Users</div>
+      <div class="card-value" id="dashboardTotalUsers">0</div>
+    </div>
+
+    <div class="retail-dashboard-card">
+      <div class="card-title">Total Picked</div>
+      <div class="card-value" id="dashboardTotalPicked">0</div>
+    </div>
+
+    <div class="retail-dashboard-card">
+      <div class="card-title">Avg Pick/h</div>
+      <div class="card-value" id="dashboardAvgPickHour">0</div>
+    </div>
+
+    <div class="retail-dashboard-card">
+      <div class="card-title">Avg Performance</div>
+      <div class="card-value" id="dashboardAvgPerformance">0.00%</div>
+    </div>
+
+    <div class="retail-dashboard-card">
+      <div class="card-title">Median Performance</div>
+      <div class="card-value" id="dashboardMedianPerformance">0.00%</div>
+    </div>
+
+    <div class="retail-dashboard-card">
+      <div class="card-title">Total Gaps</div>
+      <div class="card-value" id="dashboardTotalGaps">00:00:00</div>
+    </div>
+  </div>
+
+  <div class="retail-chart-row">
+    <div class="retail-chart-card retail-pie-card">
+      <h4>Performance Distribution</h4>
+      <div class="retail-pie-wrap">
+        <canvas id="retailPerformancePieChart"></canvas>
+      </div>
+    </div>
+
+    <div class="retail-chart-card">
+      <h4>Performance Buckets</h4>
+      <div class="retail-dashboard-counts">
+        <div class="retail-count-pill">Well Done: <span id="retailCountWellDone">0</span></div>
+        <div class="retail-count-pill">Almost: <span id="retailCountAlmostThere">0</span></div>
+        <div class="retail-count-pill">Poor: <span id="retailCountPoor">0</span></div>
+        <div class="retail-count-pill">No Activity: <span id="retailCountNoActivity">0</span></div>
+      </div>
+      <div class="retail-bar-wrap">
+        <canvas id="retailPerformanceBarChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <div class="retail-dashboard-tables">
+    <div>
+      <div class="retail-section-title">
+        <i class="fa fa-trophy"></i> Top 5 Performance
+      </div>
+      <table class="retail-mini-table" id="dashboardTopPerformanceTable">
+        <thead>
+          <tr>
+            <th>User ID</th>
+            <th>Performance</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
       </table>
     </div>
+
+    <div>
+      <div class="retail-section-title">
+        <i class="fa fa-arrow-down"></i> Bottom 5 Performance
+      </div>
+      <table class="retail-mini-table" id="dashboardBottomPerformanceTable">
+        <thead>
+          <tr>
+            <th>User ID</th>
+            <th>Performance</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <div>
+      <div class="retail-section-title">
+        <i class="fa fa-clock"></i> Top 5 Total Gaps
+      </div>
+      <table class="retail-mini-table" id="dashboardTopGapsTable">
+        <thead>
+          <tr>
+            <th>User ID</th>
+            <th>Total Gaps</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="tab-bottom-spacer"></div>
+</div>
+
+<!-- Summary Tab - Phase 1 -->
+<div id="summaryTabContent" style="display: none;">
+  <div class="retail-section-title">
+    <i class="fa fa-users"></i> Retail Pick Summary — CORE × AGY
+  </div>
+
+  <div class="summary-block">
+    <div class="summary-block-title summary-core-title">
+      <i class="fa fa-id-card"></i> CORE Summary
+    </div>
+
+    <div class="retail-summary-grid">
+      <div class="retail-summary-card">
+        <div class="card-title">Users</div>
+        <div class="card-value" id="summaryCoreUsers">0</div>
+      </div>
+
+      <div class="retail-summary-card">
+        <div class="card-title">Total Picked</div>
+        <div class="card-value" id="summaryCorePicked">0</div>
+      </div>
+
+      <div class="retail-summary-card">
+        <div class="card-title">Avg Performance</div>
+        <div class="card-value" id="summaryCoreAvgPerf">0.00%</div>
+      </div>
+
+      <div class="retail-summary-card">
+        <div class="card-title">Median Performance</div>
+        <div class="card-value" id="summaryCoreMedianPerf">0.00%</div>
+      </div>
+
+      <div class="retail-summary-card">
+        <div class="card-title">Avg Pick/h</div>
+        <div class="card-value" id="summaryCoreAvgPickHour">0</div>
+      </div>
+
+      <div class="retail-summary-card">
+        <div class="card-title">Total Gaps</div>
+        <div class="card-value" id="summaryCoreGaps">00:00:00</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="summary-block">
+    <div class="summary-block-title summary-agy-title">
+      <i class="fa fa-briefcase"></i> AGY Summary
+    </div>
+
+    <div class="retail-summary-grid">
+      <div class="retail-summary-card">
+        <div class="card-title">Users</div>
+        <div class="card-value" id="summaryAgyUsers">0</div>
+      </div>
+
+      <div class="retail-summary-card">
+        <div class="card-title">Total Picked</div>
+        <div class="card-value" id="summaryAgyPicked">0</div>
+      </div>
+
+      <div class="retail-summary-card">
+        <div class="card-title">Avg Performance</div>
+        <div class="card-value" id="summaryAgyAvgPerf">0.00%</div>
+      </div>
+
+      <div class="retail-summary-card">
+        <div class="card-title">Median Performance</div>
+        <div class="card-value" id="summaryAgyMedianPerf">0.00%</div>
+      </div>
+
+      <div class="retail-summary-card">
+        <div class="card-title">Avg Pick/h</div>
+        <div class="card-value" id="summaryAgyAvgPickHour">0</div>
+      </div>
+
+      <div class="retail-summary-card">
+        <div class="card-title">Total Gaps</div>
+        <div class="card-value" id="summaryAgyGaps">00:00:00</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="retail-chart-row">
+    <div class="retail-chart-card">
+      <h4>Median Performance — CORE × AGY</h4>
+      <canvas id="retailSummaryMedianChart"></canvas>
+    </div>
+
+    <div class="retail-chart-card">
+      <h4>Performance Buckets — CORE × AGY</h4>
+      <canvas id="retailSummaryBucketsChart"></canvas>
+    </div>
+  </div>
+
+  <div class="retail-dashboard-tables">
+    <div>
+      <div class="retail-section-title">
+        <i class="fa fa-layer-group"></i> CORE Performance Buckets
+      </div>
+      <table class="retail-mini-table" id="summaryCoreBucketsTable">
+        <thead>
+          <tr>
+            <th>Bucket</th>
+            <th>Users</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <div>
+      <div class="retail-section-title">
+        <i class="fa fa-layer-group"></i> AGY Performance Buckets
+      </div>
+      <table class="retail-mini-table" id="summaryAgyBucketsTable">
+        <thead>
+          <tr>
+            <th>Bucket</th>
+            <th>Users</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="tab-bottom-spacer"></div>
+</div>
   </div>
   <!-- Lógica JavaScript (100% inalterada) -->
   <script>
@@ -571,6 +1051,16 @@ tbody tr:hover {
      * Configurações Globais para Retail Pick Tracker
      * ====================================================== */
     const trackerTarget = 209; // Target fixo de 209 unidades/hora
+
+    // Fase 2 - instâncias dos gráficos Retail
+    let retailPerformancePieChart = null;
+    let retailPerformanceBarChart = null;
+    let retailSummaryMedianChart = null;
+    let retailSummaryBucketsChart = null;
+
+    if (window.Chart && window.ChartDataLabels) {
+      Chart.register(ChartDataLabels);
+    }
 
     /* ======================================================
      * Funções Utilitárias
@@ -665,23 +1155,80 @@ function getUserType(userId) {
       if (btn) btn.classList.add('active');
     }
 
-        function showHomeTab() {
-      document.getElementById('homeTabContent').style.display = 'block';
+    function hideAllTabs() {
+      document.getElementById('homeTabContent').style.display = 'none';
       document.getElementById('gapsTabContent').style.display = 'none';
-      setActiveTab('homeTabBtn');
+
+      const dashboardTab = document.getElementById('dashboardTabContent');
+      const summaryTab = document.getElementById('summaryTabContent');
+
+      if (dashboardTab) dashboardTab.style.display = 'none';
+      if (summaryTab) summaryTab.style.display = 'none';
     }
 
-   function showGapsTab() {
-  document.getElementById('homeTabContent').style.display = 'none';
-  document.getElementById('gapsTabContent').style.display = 'block';
-  setActiveTab('gapsTabBtn');
+    function showHomeTab() {
+      hideAllTabs();
+      document.getElementById('homeTabContent').style.display = 'block';
+      setActiveTab('homeTabBtn');
 
-  const savedData = localStorage.getItem('retailPickData');
-  if (savedData) {
-    const dataMap = JSON.parse(savedData);
-    applyFilters(dataMap);  // reaplica todos os filtros e atualiza a Gaps
-  }
-}
+      const savedData = localStorage.getItem('retailPickData');
+      if (savedData) {
+        applyFilters(JSON.parse(savedData));
+      }
+    }
+
+    function showGapsTab() {
+      hideAllTabs();
+      document.getElementById('gapsTabContent').style.display = 'block';
+      setActiveTab('gapsTabBtn');
+
+      const savedData = localStorage.getItem('retailPickData');
+      if (savedData) {
+        applyFilters(JSON.parse(savedData));
+      }
+    }
+
+    function showDashboardTab() {
+      hideAllTabs();
+
+      const dashboardTab = document.getElementById('dashboardTabContent');
+      if (dashboardTab) dashboardTab.style.display = 'block';
+
+      setActiveTab('dashboardTabBtn');
+
+      const savedData = localStorage.getItem('retailPickData');
+      if (savedData) {
+        const dataMap = JSON.parse(savedData);
+        const filteredMap = getFilteredRetailMapFromUI(dataMap);
+        updateRetailDashboard(filteredMap);
+      }
+
+      requestAnimationFrame(() => {
+        if (retailPerformancePieChart) retailPerformancePieChart.resize();
+        if (retailPerformanceBarChart) retailPerformanceBarChart.resize();
+      });
+    }
+
+    function showSummaryTab() {
+      hideAllTabs();
+
+      const summaryTab = document.getElementById('summaryTabContent');
+      if (summaryTab) summaryTab.style.display = 'block';
+
+      setActiveTab('summaryTabBtn');
+
+      const savedData = localStorage.getItem('retailPickData');
+      if (savedData) {
+        const dataMap = JSON.parse(savedData);
+        const filteredMap = getFilteredRetailMapFromUI(dataMap);
+        updateRetailSummary(filteredMap);
+      }
+
+      requestAnimationFrame(() => {
+        if (retailSummaryMedianChart) retailSummaryMedianChart.resize();
+        if (retailSummaryBucketsChart) retailSummaryBucketsChart.resize();
+      });
+    }
 
 
 
@@ -728,44 +1275,37 @@ function getUserType(userId) {
   gapsTableBody.innerHTML = '';
 
   Object.entries(dataMap).forEach(([userId, stats]) => {
-    if (stats.nGaps > 0 && stats.gapsList && stats.gapsList.length > 0) {
+    const hasGaps = stats.nGaps > 0 && Array.isArray(stats.gapsList) && stats.gapsList.length > 0;
+
+    if (hasGaps) {
       stats.gapsList.forEach((gapObj, index) => {
         const gapMinutes = gapObj.gapSec / 60;
         const gapTimeFormatted = formatDecimalToTime(gapObj.gapSec / 3600);
 
-        // Usa a mesma lógica do código acabado
+        // Same floor / cross floor usando a lógica do Retail
         const floorIn  = getFloor(gapObj.locationIn);
         const floorOut = getFloor(gapObj.locationOut);
         const sameFloor = floorIn && floorOut && floorIn === floorOut;
 
-        let rowClass = '';
+        let rowClass = sameFloor ? 'gap-same-floor' : 'gap-cross-floor';
         let gapCellClass = '';
 
+        // Threshold visual:
+        // Mesmo floor: acima de 7 minutos fica crítico
+        // Entre floors: acima de 12 minutos fica crítico
         if (sameFloor) {
-          // Linha sempre verde claro no mesmo floor
-          rowClass = 'gap-same-floor';
-
-          // Gap Time (mesmo floor):
-          // < 5 min        → normal
-          // 5–7 min        → normal (mantém fonte)
-          // > 7 min        → bold + vermelho
           if (gapMinutes > 7) {
             gapCellClass = 'gap-critical';
           }
         } else {
-          // Linha sempre vermelha clara entre pisos
-          rowClass = 'gap-diff-floor';
-
-          // Gap Time (floors diferentes):
-          // < 10 min       → normal
-          // 10–12 min      → normal
-          // > 12 min       → bold + vermelho
           if (gapMinutes > 12) {
             gapCellClass = 'gap-critical';
           }
         }
 
         const row = document.createElement('tr');
+        row.classList.add(rowClass);
+
         row.innerHTML = `
           <td>${stats.date || ''}</td>
           <td>${userId}</td>
@@ -775,10 +1315,18 @@ function getUserType(userId) {
           <td>${gapObj.end || 'N/A'}</td>
           <td class="${gapCellClass}">${gapTimeFormatted}</td>
           <td>${index + 1}</td>
+          <td>${sameFloor ? 'Yes' : 'No'}</td>
         `;
 
-        if (rowClass) {
-          row.classList.add(rowClass);
+        // Ticket/LPN change marker: same concept as Online Tracker List ID change
+        if (gapObj.ticketChange) {
+          const tds = row.querySelectorAll('td');
+          [2, 3].forEach(i => {
+            if (tds[i]) {
+              tds[i].classList.add('ticket-change-cell');
+              tds[i].title = `Ticket/LPN: ${gapObj.ticketFrom || ''} → ${gapObj.ticketTo || ''}`;
+            }
+          });
         }
 
         gapsTableBody.appendChild(row);
@@ -869,9 +1417,45 @@ document.getElementById('userLostLabel').textContent = lostDecimal.toFixed(2);
      * Função de Filtragem para a Aba Home
      * ====================================================== */
     function applyFilters(dataMap) {
+  const filteredMap = getFilteredRetailMapFromUI(dataMap);
+
+  // Home
+  updateTable(filteredMap);
+  updateStats(filteredMap);
+
+  // Gaps sincronizado com os mesmos filtros
+  updateGapsTable(filteredMap);
+
+  // Phase 1 tabs
+  updateRetailDashboard(filteredMap);
+  updateRetailSummary(filteredMap);
+}
+
+/* ======================================================
+ * PHASE 1 - Dashboard & Summary helpers
+ * Uses only Retail Tracker calculated data
+ * ====================================================== */
+
+function getPerformanceNumber(stats) {
+  const hours = timeToSeconds(stats.totalHours || '00:00:00') / 3600;
+  return hours > 0 ? (stats.qty / (hours * trackerTarget)) * 100 : 0;
+}
+
+function medianArray(values) {
+  if (!values || values.length === 0) return 0;
+
+  const sorted = [...values].sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+
+  return sorted.length % 2 === 0
+    ? (sorted[mid - 1] + sorted[mid]) / 2
+    : sorted[mid];
+}
+
+function getFilteredRetailMapFromUI(dataMap) {
   const performanceFilter = document.getElementById('filterPerformance').value;
   const userIdFilter      = document.getElementById('filterUserId').value.toLowerCase();
-  const userTypeFilter    = document.getElementById('filterUserType').value; // "" | "core" | "agy"
+  const userTypeFilter    = document.getElementById('filterUserType').value;
 
   const filtered = Object.entries(dataMap).filter(([userId, stats]) => {
     const matchesPerformance =
@@ -880,7 +1464,6 @@ document.getElementById('userLostLabel').textContent = lostDecimal.toFixed(2);
     const matchesUserId =
       !userIdFilter || userId.toLowerCase().includes(userIdFilter);
 
-    // se stats.userType não existir, recalcula com base no próprio userId
     const userType = stats.userType || getUserType(userId);
     const matchesUserType =
       !userTypeFilter || userType === userTypeFilter;
@@ -888,14 +1471,400 @@ document.getElementById('userLostLabel').textContent = lostDecimal.toFixed(2);
     return matchesPerformance && matchesUserId && matchesUserType;
   });
 
-  const filteredMap = Object.fromEntries(filtered);
+  return Object.fromEntries(filtered);
+}
 
-  // Home
-  updateTable(filteredMap);
-  updateStats(filteredMap);
+function fillMiniTable(tableId, rows, columns) {
+  const table = document.getElementById(tableId);
+  if (!table) return;
 
-  // Gaps sincronizado com os mesmos filtros
-  updateGapsTable(filteredMap);
+  const tbody = table.querySelector('tbody');
+  tbody.innerHTML = '';
+
+  rows.forEach(item => {
+    const tr = document.createElement('tr');
+
+    columns.forEach(col => {
+      const td = document.createElement('td');
+      td.textContent = item[col];
+      tr.appendChild(td);
+    });
+
+    tbody.appendChild(tr);
+  });
+}
+
+
+function getPerformanceBucket(stats) {
+  const label = stats.performance || '';
+
+  if (label.includes('Well Done')) return 'Well Done';
+  if (label.includes('Almost There')) return 'Almost There';
+  if (label.includes('Poor')) return 'Poor';
+  return 'No Activity';
+}
+
+function getPerformanceBucketCounts(dataMap) {
+  const counts = {
+    'Well Done': 0,
+    'Almost There': 0,
+    'Poor': 0,
+    'No Activity': 0
+  };
+
+  Object.values(dataMap).forEach(stats => {
+    counts[getPerformanceBucket(stats)]++;
+  });
+
+  return counts;
+}
+
+function destroyChartInstance(chartInstance) {
+  if (chartInstance && typeof chartInstance.destroy === 'function') {
+    chartInstance.destroy();
+  }
+}
+
+function renderRetailDashboardCharts(dataMap) {
+  if (!window.Chart) return;
+
+  const counts = getPerformanceBucketCounts(dataMap);
+  const labels = ['Well Done', 'Almost There', 'Poor', 'No Activity'];
+  const values = labels.map(label => counts[label] || 0);
+  const total = values.reduce((sum, value) => sum + value, 0);
+
+  const countWellDone = document.getElementById('retailCountWellDone');
+  const countAlmostThere = document.getElementById('retailCountAlmostThere');
+  const countPoor = document.getElementById('retailCountPoor');
+  const countNoActivity = document.getElementById('retailCountNoActivity');
+
+  if (countWellDone) countWellDone.textContent = counts['Well Done'] || 0;
+  if (countAlmostThere) countAlmostThere.textContent = counts['Almost There'] || 0;
+  if (countPoor) countPoor.textContent = counts['Poor'] || 0;
+  if (countNoActivity) countNoActivity.textContent = counts['No Activity'] || 0;
+
+  const pieCanvas = document.getElementById('retailPerformancePieChart');
+  if (pieCanvas) {
+    destroyChartInstance(retailPerformancePieChart);
+    retailPerformancePieChart = new Chart(pieCanvas, {
+      type: 'pie',
+      data: {
+        labels,
+        datasets: [{
+          data: values,
+          backgroundColor: ['#28a745', '#ff8c00', '#dc3545', '#6c757d'],
+          borderColor: '#ffffff',
+          borderWidth: 2
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        aspectRatio: 1,
+        layout: { padding: 10 },
+        plugins: {
+          legend: { position: 'bottom' },
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                const value = context.raw || 0;
+                const pct = total > 0 ? ((value / total) * 100).toFixed(1) : '0.0';
+                return `${context.label}: ${value} (${pct}%)`;
+              }
+            }
+          },
+          datalabels: {
+            color: '#ffffff',
+            font: { weight: 'bold', size: 12 },
+            formatter: function(value) {
+              if (!value || total === 0) return '';
+              return ((value / total) * 100).toFixed(1) + '%';
+            }
+          }
+        }
+      }
+    });
+  }
+
+  const barCanvas = document.getElementById('retailPerformanceBarChart');
+  if (barCanvas) {
+    destroyChartInstance(retailPerformanceBarChart);
+    retailPerformanceBarChart = new Chart(barCanvas, {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [{
+          label: 'Users',
+          data: values,
+          backgroundColor: ['#28a745', '#ff8c00', '#dc3545', '#6c757d'],
+          borderWidth: 1
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          y: { beginAtZero: true, ticks: { precision: 0 } }
+        },
+        plugins: {
+          legend: { display: false },
+          datalabels: {
+            anchor: 'end',
+            align: 'top',
+            color: '#111',
+            font: { weight: 'bold' },
+            formatter: function(value) { return value || ''; }
+          }
+        }
+      }
+    });
+  }
+}
+
+function renderRetailSummaryCharts(core, agy) {
+  if (!window.Chart) return;
+
+  const medianCanvas = document.getElementById('retailSummaryMedianChart');
+  if (medianCanvas) {
+    destroyChartInstance(retailSummaryMedianChart);
+    retailSummaryMedianChart = new Chart(medianCanvas, {
+      type: 'bar',
+      data: {
+        labels: ['CORE', 'AGY'],
+        datasets: [{
+          label: 'Median Performance %',
+          data: [core.medianPerformance, agy.medianPerformance],
+          backgroundColor: ['#28a745', '#ff8c00'],
+          borderWidth: 1
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          y: { beginAtZero: true, ticks: { callback: value => value + '%' } }
+        },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: context => `${context.raw.toFixed(2)}%`
+            }
+          },
+          datalabels: {
+            anchor: 'end',
+            align: 'top',
+            color: '#111',
+            font: { weight: 'bold' },
+            formatter: value => value.toFixed(2) + '%'
+          }
+        }
+      }
+    });
+  }
+
+  const bucketsCanvas = document.getElementById('retailSummaryBucketsChart');
+  if (bucketsCanvas) {
+    const labels = ['Well Done', 'Almost There', 'Poor', 'No Activity'];
+
+    destroyChartInstance(retailSummaryBucketsChart);
+    retailSummaryBucketsChart = new Chart(bucketsCanvas, {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [
+          {
+            label: 'CORE',
+            data: labels.map(label => core.buckets[label] || 0),
+            backgroundColor: '#28a745',
+            borderWidth: 1
+          },
+          {
+            label: 'AGY',
+            data: labels.map(label => agy.buckets[label] || 0),
+            backgroundColor: '#ff8c00',
+            borderWidth: 1
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          y: { beginAtZero: true, ticks: { precision: 0 } }
+        },
+        plugins: {
+          legend: { position: 'bottom' },
+          datalabels: {
+            anchor: 'end',
+            align: 'top',
+            color: '#111',
+            font: { weight: 'bold' },
+            formatter: value => value || ''
+          }
+        }
+      }
+    });
+  }
+}
+
+function updateRetailDashboard(dataMap) {
+  const entries = Object.entries(dataMap);
+
+  let totalPicked = 0;
+  let totalWorkedHours = 0;
+  let totalGapsHours = 0;
+  let sumPerformance = 0;
+  const performanceValues = [];
+
+  const users = entries.map(([userId, stats]) => {
+    const workedHours = timeToSeconds(stats.totalHours || '00:00:00') / 3600;
+    const perf = getPerformanceNumber(stats);
+
+    totalPicked += stats.qty || 0;
+    totalWorkedHours += workedHours;
+    totalGapsHours += stats.totalGaps || 0;
+    sumPerformance += perf;
+    performanceValues.push(perf);
+
+    return {
+      userId,
+      performance: perf,
+      totalGaps: stats.totalGaps || 0
+    };
+  });
+
+  const totalUsers = entries.length;
+  const avgPickHour = totalWorkedHours > 0 ? totalPicked / totalWorkedHours : 0;
+  const avgPerformance = totalUsers > 0 ? sumPerformance / totalUsers : 0;
+  const medianPerformance = medianArray(performanceValues);
+
+  document.getElementById('dashboardTotalUsers').textContent = totalUsers;
+  document.getElementById('dashboardTotalPicked').textContent = totalPicked.toLocaleString('en-US');
+  document.getElementById('dashboardAvgPickHour').textContent = avgPickHour.toFixed(0);
+  document.getElementById('dashboardAvgPerformance').textContent = avgPerformance.toFixed(2) + '%';
+  document.getElementById('dashboardMedianPerformance').textContent = medianPerformance.toFixed(2) + '%';
+  document.getElementById('dashboardTotalGaps').textContent = formatDecimalToTime(totalGapsHours);
+
+  const topPerformance = [...users]
+    .sort((a, b) => b.performance - a.performance)
+    .slice(0, 5)
+    .map(u => ({
+      userId: u.userId,
+      Performance: u.performance.toFixed(2) + '%'
+    }));
+
+  const bottomPerformance = [...users]
+    .sort((a, b) => a.performance - b.performance)
+    .slice(0, 5)
+    .map(u => ({
+      userId: u.userId,
+      Performance: u.performance.toFixed(2) + '%'
+    }));
+
+  const topGaps = [...users]
+    .sort((a, b) => b.totalGaps - a.totalGaps)
+    .slice(0, 5)
+    .map(u => ({
+      userId: u.userId,
+      'Total Gaps': formatDecimalToTime(u.totalGaps)
+    }));
+
+  fillMiniTable('dashboardTopPerformanceTable', topPerformance, ['userId', 'Performance']);
+  fillMiniTable('dashboardBottomPerformanceTable', bottomPerformance, ['userId', 'Performance']);
+  fillMiniTable('dashboardTopGapsTable', topGaps, ['userId', 'Total Gaps']);
+
+  renderRetailDashboardCharts(dataMap);
+}
+
+function buildRetailSummaryStats(dataMap, type) {
+  const entries = Object.entries(dataMap).filter(([userId, stats]) => {
+    const userType = stats.userType || getUserType(userId);
+    return userType === type;
+  });
+
+  let totalPicked = 0;
+  let totalWorkedHours = 0;
+  let totalGapsHours = 0;
+  let sumPerformance = 0;
+
+  const performanceValues = [];
+  const buckets = {
+    'Well Done': 0,
+    'Almost There': 0,
+    'Poor': 0,
+    'No Activity': 0
+  };
+
+  entries.forEach(([userId, stats]) => {
+    const workedHours = timeToSeconds(stats.totalHours || '00:00:00') / 3600;
+    const perf = getPerformanceNumber(stats);
+
+    totalPicked += stats.qty || 0;
+    totalWorkedHours += workedHours;
+    totalGapsHours += stats.totalGaps || 0;
+    sumPerformance += perf;
+    performanceValues.push(perf);
+
+    if ((stats.performance || '').includes('Well Done')) {
+      buckets['Well Done']++;
+    } else if ((stats.performance || '').includes('Almost There')) {
+      buckets['Almost There']++;
+    } else if ((stats.performance || '').includes('Poor')) {
+      buckets['Poor']++;
+    } else {
+      buckets['No Activity']++;
+    }
+  });
+
+  const users = entries.length;
+  const avgPerformance = users > 0 ? sumPerformance / users : 0;
+  const medianPerformance = medianArray(performanceValues);
+  const avgPickHour = totalWorkedHours > 0 ? totalPicked / totalWorkedHours : 0;
+
+  return {
+    users,
+    totalPicked,
+    totalGapsHours,
+    avgPerformance,
+    medianPerformance,
+    avgPickHour,
+    buckets
+  };
+}
+
+function updateRetailSummary(dataMap) {
+  const core = buildRetailSummaryStats(dataMap, 'core');
+  const agy = buildRetailSummaryStats(dataMap, 'agy');
+
+  document.getElementById('summaryCoreUsers').textContent = core.users;
+  document.getElementById('summaryCorePicked').textContent = core.totalPicked.toLocaleString('en-US');
+  document.getElementById('summaryCoreAvgPerf').textContent = core.avgPerformance.toFixed(2) + '%';
+  document.getElementById('summaryCoreMedianPerf').textContent = core.medianPerformance.toFixed(2) + '%';
+  document.getElementById('summaryCoreAvgPickHour').textContent = core.avgPickHour.toFixed(0);
+  document.getElementById('summaryCoreGaps').textContent = formatDecimalToTime(core.totalGapsHours);
+
+  document.getElementById('summaryAgyUsers').textContent = agy.users;
+  document.getElementById('summaryAgyPicked').textContent = agy.totalPicked.toLocaleString('en-US');
+  document.getElementById('summaryAgyAvgPerf').textContent = agy.avgPerformance.toFixed(2) + '%';
+  document.getElementById('summaryAgyMedianPerf').textContent = agy.medianPerformance.toFixed(2) + '%';
+  document.getElementById('summaryAgyAvgPickHour').textContent = agy.avgPickHour.toFixed(0);
+  document.getElementById('summaryAgyGaps').textContent = formatDecimalToTime(agy.totalGapsHours);
+
+  const coreBucketRows = Object.entries(core.buckets).map(([bucket, count]) => ({
+    Bucket: bucket,
+    Users: count
+  }));
+
+  const agyBucketRows = Object.entries(agy.buckets).map(([bucket, count]) => ({
+    Bucket: bucket,
+    Users: count
+  }));
+
+  fillMiniTable('summaryCoreBucketsTable', coreBucketRows, ['Bucket', 'Users']);
+  fillMiniTable('summaryAgyBucketsTable', agyBucketRows, ['Bucket', 'Users']);
+
+  renderRetailSummaryCharts(core, agy);
 }
 
 
@@ -921,6 +1890,8 @@ document.getElementById('userLostLabel').textContent = lostDecimal.toFixed(2);
     // Botões de Navegação na Top Bar
     document.getElementById('homeTabBtn').addEventListener('click', showHomeTab);
     document.getElementById('gapsTabBtn').addEventListener('click', showGapsTab);
+    document.getElementById('dashboardTabBtn').addEventListener('click', showDashboardTab);
+    document.getElementById('summaryTabBtn').addEventListener('click', showSummaryTab);
     // Eventos para os filtros integrados
     document.getElementById('filterPerformance').addEventListener('change', () => {
   const savedData = localStorage.getItem('retailPickData');
@@ -949,12 +1920,16 @@ document.getElementById('filterUserType').addEventListener('change', () => {
 
         window.onload = function () {
       const savedData = localStorage.getItem('retailPickData');
+
       if (savedData) {
         const dataMap = JSON.parse(savedData);
         updateTable(dataMap);
         updateStats(dataMap);
         updateGapsTable(dataMap);
+        updateRetailDashboard(dataMap);
+        updateRetailSummary(dataMap);
       }
+
       // Garante que a Home esteja visível e o botão fique marcado
       showHomeTab();
     };
@@ -970,143 +1945,336 @@ document.getElementById('filterUserType').addEventListener('change', () => {
       reader.readAsText(file);
     }
 
-    function processCSV(csvText) {
-      try {
-        const delimiter = csvText.includes(',') ? ',' : '\t';
-        const rows = csvText.split('\n').map(row => row.split(delimiter));
+    /* ======================================================
+     * BlueYonder / Legacy CSV parsing helpers
+     * ====================================================== */
+    function splitCellLines(value) {
+      return String(value || '')
+        .split(/\r?\n/)
+        .map(v => v.trim())
+        .filter(Boolean);
+    }
 
-        const dateFromFile = rows[3]?.[1]?.trim();
-        const formattedDate = formatDate(dateFromFile);
+    function isBlueYonderCSV(rows) {
+      if (!rows || !rows.length) return false;
+      const header = rows[0].map(c => String(c || '').toLowerCase());
+      return header.some(c => c.includes('transaction date') && c.includes('user')) &&
+             header.some(c => c.includes('destination lpn')) &&
+             header.some(c => c.includes('source location'));
+    }
 
-        const dataMap = {};
-        const validEvents = {};
-        const allEvents = {};
+    function parseBlueYonderTransactionUser(cell) {
+      const lines = splitCellLines(cell);
+      const firstLine = lines[0] || '';
+      const dateTimeMatch = firstLine.match(/^(\d{1,2}\/\d{1,2}\/\d{4})\s+(\d{1,2}:\d{2}(?::\d{2})?)/);
 
-        // Ordena as linhas a partir da linha 5 pela coluna de tempo (índice 9)
-        const sortedRows = rows.slice(5).sort((a, b) => {
-          const timeA = a[9] || '';
-          const timeB = b[9] || '';
-          return timeA.localeCompare(timeB);
-        });
+      const date = dateTimeMatch ? dateTimeMatch[1] : '';
+      const time = dateTimeMatch ? ensureTimeFormat(dateTimeMatch[2]) : '';
 
-        sortedRows.forEach(row => {
-          const userId = row[0]?.trim();
-          const qty = parseInt(row[5]?.trim(), 10) || 0;
-          const time = row[9]?.trim();
-          const location = row[7]?.trim();
+      let userLine = lines[1] || '';
+      if (!userLine && lines.length > 1) {
+        userLine = lines.find(line => !/^\d{1,2}\/\d{1,2}\/\d{4}/.test(line)) || '';
+      }
 
-          if (!userId || !time) return;
+      // First token = User ID. Example: "AGYISMAIA  Ismail, Abdijabar" -> AGYISMAIA
+      const userId = (userLine.split(/\s+/)[0] || '').trim();
 
-          if (!dataMap[userId]) {
-            dataMap[userId] = {
-  qty: 0,
-  inTime: null,
-  outTime: null,
-  totalHours: 0,
-  performance: '',
-  performanceClass: '',
-  totalGaps: 0,
-  nGaps: 0,
-  date: formattedDate,
-  txnCount: 0,
-  locationIn: '',
-  locationOut: '',
-  gapsList: [],
-  userType: getUserType(userId)
-};
+      return { date, time, userId };
+    }
 
-            validEvents[userId] = [];
-            allEvents[userId] = [];
+    function extractBlueYonderTicket(cell) {
+      const lines = splitCellLines(cell);
+      const ticket = lines.find(v => /^(OX|BR|TR|ME)[A-Z0-9]+$/i.test(v));
+      return ticket ? ticket.toUpperCase() : '';
+    }
+
+    function extractBlueYonderSourceLocation(cell) {
+      const lines = splitCellLines(cell);
+      return lines[0] || '';
+    }
+
+    function parseBlueYonderRows(rows) {
+      const dataMap = {};
+      const validEvents = {};
+      const allEvents = {};
+
+      const dataRows = rows.slice(1); // row 0 = header
+
+      const parsedRows = dataRows.map(row => {
+        const transaction = parseBlueYonderTransactionUser(row[0]);
+        const qty = parseInt(String(row[3] || '').replace(/[^0-9-]/g, ''), 10) || 0;
+        const ticket = extractBlueYonderTicket(row[5]); // Column 6 in Excel, index 5 in JS
+        const location = extractBlueYonderSourceLocation(row[8]);
+
+        return {
+          userId: transaction.userId,
+          date: transaction.date,
+          time: transaction.time,
+          qty,
+          ticket,
+          location,
+          sortKey: `${normaliseDateForSort(transaction.date)} ${transaction.time}`
+        };
+      }).filter(r => r.userId && r.time);
+
+      parsedRows.sort((a, b) => {
+        if (a.userId !== b.userId) return a.userId.localeCompare(b.userId);
+        return a.sortKey.localeCompare(b.sortKey);
+      });
+
+      parsedRows.forEach(item => {
+        const { userId, qty, time, location, date, ticket } = item;
+
+        if (!dataMap[userId]) {
+          dataMap[userId] = {
+            qty: 0,
+            inTime: null,
+            outTime: null,
+            totalHours: 0,
+            performance: '',
+            performanceClass: '',
+            totalGaps: 0,
+            nGaps: 0,
+            date: date || '',
+            txnCount: 0,
+            locationIn: '',
+            locationOut: '',
+            gapsList: [],
+            userType: getUserType(userId)
+          };
+
+          validEvents[userId] = [];
+          allEvents[userId] = [];
+        }
+
+        if (!dataMap[userId].date && date) dataMap[userId].date = date;
+
+        dataMap[userId].qty += qty;
+        dataMap[userId].txnCount++;
+
+        const eventObj = { time, location, date, ticket, sortKey: item.sortKey };
+        allEvents[userId].push(eventObj);
+        validEvents[userId].push(eventObj);
+
+        if (!dataMap[userId].inTime || item.sortKey < `${normaliseDateForSort(dataMap[userId].date)} ${dataMap[userId].inTime}`) {
+          dataMap[userId].inTime = time;
+          dataMap[userId].locationIn = location || '';
+        }
+
+        if (!dataMap[userId].outTime || item.sortKey > `${normaliseDateForSort(dataMap[userId].date)} ${dataMap[userId].outTime}`) {
+          dataMap[userId].outTime = time;
+          dataMap[userId].locationOut = location || '';
+        }
+      });
+
+      finaliseRetailDataMap(dataMap, validEvents, allEvents);
+      return dataMap;
+    }
+
+    function normaliseDateForSort(dateText) {
+      if (!dateText) return '';
+      const parts = String(dateText).split('/').map(Number);
+      if (parts.length === 3) {
+        const [d, m, y] = parts;
+        return `${String(y).padStart(4, '0')}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+      }
+      return String(dateText);
+    }
+
+    function parseLegacyRetailRows(csvText) {
+      const delimiter = csvText.includes(',') ? ',' : '\t';
+      const rows = csvText.split('\n').map(row => row.split(delimiter));
+
+      const dateFromFile = rows[3]?.[1]?.trim();
+      const formattedDate = formatDate(dateFromFile);
+
+      const dataMap = {};
+      const validEvents = {};
+      const allEvents = {};
+
+      const sortedRows = rows.slice(5).sort((a, b) => {
+        const timeA = a[9] || '';
+        const timeB = b[9] || '';
+        return timeA.localeCompare(timeB);
+      });
+
+      sortedRows.forEach(row => {
+        const userId = row[0]?.trim();
+        const qty = parseInt(row[5]?.trim(), 10) || 0;
+        const time = row[9]?.trim();
+        const location = row[7]?.trim();
+
+        if (!userId || !time) return;
+
+        if (!dataMap[userId]) {
+          dataMap[userId] = {
+            qty: 0,
+            inTime: null,
+            outTime: null,
+            totalHours: 0,
+            performance: '',
+            performanceClass: '',
+            totalGaps: 0,
+            nGaps: 0,
+            date: formattedDate,
+            txnCount: 0,
+            locationIn: '',
+            locationOut: '',
+            gapsList: [],
+            userType: getUserType(userId)
+          };
+
+          validEvents[userId] = [];
+          allEvents[userId] = [];
+        }
+
+        dataMap[userId].qty += qty;
+        dataMap[userId].txnCount++;
+
+        allEvents[userId].push({ time, location, date: formattedDate, ticket: '' });
+        validEvents[userId].push({ time, location, date: formattedDate, ticket: '' });
+
+        if (!dataMap[userId].inTime || time < dataMap[userId].inTime) {
+          dataMap[userId].inTime = time;
+          dataMap[userId].locationIn = location || '';
+        }
+        if (!dataMap[userId].outTime || time > dataMap[userId].outTime) {
+          dataMap[userId].outTime = time;
+          dataMap[userId].locationOut = location || '';
+        }
+      });
+
+      finaliseRetailDataMap(dataMap, validEvents, allEvents);
+      return dataMap;
+    }
+
+    function finaliseRetailDataMap(dataMap, validEvents, allEvents) {
+      Object.keys(allEvents).forEach(userId => {
+        allEvents[userId] = allEvents[userId]
+          .filter((obj, i, arr) => arr.findIndex(o => `${o.date}|${o.time}|${o.location}|${o.ticket || ''}` === `${obj.date}|${obj.time}|${obj.location}|${obj.ticket || ''}`) === i)
+          .sort((a, b) => `${normaliseDateForSort(a.date)} ${a.time}`.localeCompare(`${normaliseDateForSort(b.date)} ${b.time}`));
+      });
+
+      Object.keys(validEvents).forEach(userId => {
+        validEvents[userId] = validEvents[userId]
+          .filter((obj, i, arr) => arr.findIndex(o => `${o.date}|${o.time}|${o.location}|${o.ticket || ''}` === `${obj.date}|${obj.time}|${obj.location}|${obj.ticket || ''}`) === i)
+          .sort((a, b) => `${normaliseDateForSort(a.date)} ${a.time}`.localeCompare(`${normaliseDateForSort(b.date)} ${b.time}`));
+
+        const evs = validEvents[userId];
+        if (evs.length) {
+          dataMap[userId].inTime = evs[0].time || dataMap[userId].inTime;
+          dataMap[userId].locationIn = evs[0].location || dataMap[userId].locationIn;
+          dataMap[userId].outTime = evs[evs.length - 1].time || dataMap[userId].outTime;
+          dataMap[userId].locationOut = evs[evs.length - 1].location || dataMap[userId].locationOut;
+          if (!dataMap[userId].date && evs[0].date) dataMap[userId].date = evs[0].date;
+        }
+      });
+
+      Object.keys(validEvents).forEach(userId => {
+        const events = validEvents[userId];
+        if (!events || events.length < 2) return;
+
+        for (let i = 1; i < events.length; i++) {
+          const prevObj = events[i - 1];
+          const currObj = events[i];
+
+          const diffSec = calculateSecondsDifference(prevObj.time, currObj.time);
+          const gapHours = diffSec / 3600;
+
+          // Mantém a lógica original: gap a partir de 5 minutos
+          if (gapHours >= 0.0833) {
+            const ticketFrom = prevObj.ticket || '';
+            const ticketTo = currObj.ticket || '';
+            const ticketChange = Boolean(ticketFrom && ticketTo && ticketFrom !== ticketTo);
+
+            dataMap[userId].totalGaps += gapHours;
+            dataMap[userId].nGaps += 1;
+            dataMap[userId].gapsList.push({
+              gapSec: diffSec,
+              start: prevObj.time,
+              end: currObj.time,
+              locationIn: prevObj.location,
+              locationOut: currObj.location,
+              ticketFrom,
+              ticketTo,
+              ticketChange
+            });
           }
+        }
+      });
 
-          dataMap[userId].qty += qty;
-          dataMap[userId].txnCount++;
-          allEvents[userId].push({ time: time, location: location });
-          validEvents[userId].push({ time: time, location: location });
+      Object.keys(dataMap).forEach(userId => {
+        const data = dataMap[userId];
+        if (!data.inTime || !data.outTime) {
+          delete dataMap[userId];
+          return;
+        }
 
-          if (!dataMap[userId].inTime || time < dataMap[userId].inTime) {
-            dataMap[userId].inTime = time;
-            dataMap[userId].locationIn = location || '';
-          }
-          if (!dataMap[userId].outTime || time > dataMap[userId].outTime) {
-            dataMap[userId].outTime = time;
-            dataMap[userId].locationOut = location || '';
-          }
-        });
+        const totalHoursDecimal = calculateSecondsDifference(data.inTime, data.outTime) / 3600;
+        data.totalHours = formatDecimalToTime(totalHoursDecimal);
 
-        Object.keys(allEvents).forEach(userId => {
-          allEvents[userId] = allEvents[userId]
-            .filter((obj, i, arr) => arr.findIndex(o => o.time === obj.time) === i)
-            .sort((a, b) => a.time.localeCompare(b.time));
-        });
-        Object.keys(validEvents).forEach(userId => {
-          validEvents[userId] = validEvents[userId]
-            .filter((obj, i, arr) => arr.findIndex(o => o.time === obj.time) === i)
-            .sort((a, b) => a.time.localeCompare(b.time));
-        });
-
-        Object.keys(validEvents).forEach(userId => {
-          const events = validEvents[userId];
-          const userAll = allEvents[userId];
-          for (let i = 1; i < events.length; i++) {
-            const prevObj = events[i - 1];
-            const currObj = events[i];
-            const prev = prevObj.time;
-            const curr = currObj.time;
-            const diffSec = calculateSecondsDifference(prev, curr);
-            const gapHours = diffSec / 3600;
-            const intermediate = userAll.some(ev => ev.time > prev && ev.time < curr);
-            if (gapHours >= 0.0833 && !intermediate) {
-              dataMap[userId].totalGaps += gapHours;
-              dataMap[userId].nGaps += 1;
-              dataMap[userId].gapsList.push({ 
-                gapSec: diffSec, 
-                start: prev, 
-                end: curr, 
-                locationIn: prevObj.location, 
-                locationOut: currObj.location 
-              });
-            }
-          }
-        });
-
-        Object.keys(dataMap).forEach(userId => {
-          const data = dataMap[userId];
-          if (!data.inTime || !data.outTime) {
-            delete dataMap[userId];
-            return;
-          }
-          const totalHoursDecimal = calculateSecondsDifference(data.inTime, data.outTime) / 3600;
-          data.totalHours = formatDecimalToTime(totalHoursDecimal);
-
-          if (totalHoursDecimal <= 0) {
+        if (totalHoursDecimal <= 0) {
+          data.performance = "No Activity (0.00%)";
+          data.performanceClass = "performance-no-activity";
+        } else {
+          const performance = data.qty > 0 ? (data.qty / (totalHoursDecimal * trackerTarget)) * 100 : 0;
+          if (performance >= 100) {
+            data.performance = `Well Done (${performance.toFixed(2)}%)`;
+            data.performanceClass = "performance-well-done";
+          } else if (performance >= 85) {
+            data.performance = `Almost There (${performance.toFixed(2)}%)`;
+            data.performanceClass = "performance-almost-there";
+          } else if (performance > 0) {
+            data.performance = `Poor (${performance.toFixed(2)}%)`;
+            data.performanceClass = "performance-poor";
+          } else {
             data.performance = "No Activity (0.00%)";
             data.performanceClass = "performance-no-activity";
-          } else {
-            const performance = data.qty > 0 ? (data.qty / (totalHoursDecimal * trackerTarget)) * 100 : 0;
-            if (performance >= 100) {
-              data.performance = `Well Done (${performance.toFixed(2)}%)`;
-              data.performanceClass = "performance-well-done";
-            } else if (performance >= 85) {
-              data.performance = `Almost There (${performance.toFixed(2)}%)`;
-              data.performanceClass = "performance-almost-there";
-            } else if (performance > 0) {
-              data.performance = `Poor (${performance.toFixed(2)}%)`;
-              data.performanceClass = "performance-poor";
-            } else {
-              data.performance = "No Activity (0.00%)";
-              data.performanceClass = "performance-no-activity";
-            }
           }
-          data.txnCount = validEvents[userId].length;
-        });
+        }
 
-        localStorage.setItem('retailPickData', JSON.stringify(dataMap));
-        updateTable(dataMap);
-        updateStats(dataMap);
-        updateGapsTable(dataMap);
+        data.txnCount = validEvents[userId] ? validEvents[userId].length : data.txnCount;
+      });
+    }
+
+    function refreshRetailViews(dataMap) {
+      localStorage.setItem('retailPickData', JSON.stringify(dataMap));
+      updateTable(dataMap);
+      updateStats(dataMap);
+      updateGapsTable(dataMap);
+      updateRetailDashboard(dataMap);
+      updateRetailSummary(dataMap);
+    }
+
+    function processCSV(csvText) {
+      try {
+        let dataMap;
+
+        if (window.Papa) {
+          const parsed = Papa.parse(csvText, {
+            header: false,
+            skipEmptyLines: true,
+            dynamicTyping: false
+          });
+
+          if (parsed.errors && parsed.errors.length) {
+            console.warn('PapaParse warnings:', parsed.errors);
+          }
+
+          const rows = parsed.data || [];
+          dataMap = isBlueYonderCSV(rows)
+            ? parseBlueYonderRows(rows)
+            : parseLegacyRetailRows(csvText);
+        } else {
+          // Fallback for the old RedPrairie format only.
+          // BlueYonder needs PapaParse because cells contain line breaks.
+          dataMap = parseLegacyRetailRows(csvText);
+        }
+
+        refreshRetailViews(dataMap);
       } catch (error) {
         console.error("Error processing CSV:", error);
+        alert('Falha ao processar o CSV: ' + error.message);
       }
     }
 
@@ -1156,12 +2324,16 @@ document.getElementById('filterUserType').addEventListener('change', () => {
         }
       });
       
-      const gapsHeader = ['Date', 'User ID', 'Location IN', 'Location OUT', 'In Time', 'Out Time', 'Gap Time', 'Gap #'];
+      const gapsHeader = ['Date', 'User ID', 'Location IN', 'Location OUT', 'In Time', 'Out Time', 'Gap Time', 'Gap #', 'Same Floor?', 'Ticket From', 'Ticket To', 'Ticket Change?'];
       const gapsData = [gapsHeader.slice()];
       Object.entries(dataMap).forEach(([userId, stats]) => {
         if (stats.nGaps > 0 && stats.gapsList && stats.gapsList.length > 0) {
           stats.gapsList.forEach((gapObj, index) => {
             const gapTimeFormatted = formatDecimalToTime(gapObj.gapSec / 3600);
+            const floorIn  = getFloor(gapObj.locationIn);
+            const floorOut = getFloor(gapObj.locationOut);
+            const sameFloor = floorIn && floorOut && floorIn === floorOut;
+
             const row = [
               stats.date,
               userId,
@@ -1170,7 +2342,11 @@ document.getElementById('filterUserType').addEventListener('change', () => {
               gapObj.start,
               gapObj.end,
               gapTimeFormatted,
-              index + 1
+              index + 1,
+              sameFloor ? 'Yes' : 'No',
+              gapObj.ticketFrom || '',
+              gapObj.ticketTo || '',
+              gapObj.ticketChange ? 'Yes' : 'No'
             ];
             gapsData.push(row);
           });

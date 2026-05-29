@@ -1731,12 +1731,12 @@ function renderRetailDashboardCharts(dataMap) {
         plugins: {
           legend: { display: false },
           datalabels: {
-            anchor: 'end',
-            align: 'top',
-            color: '#111',
-            font: { weight: 'bold' },
-            formatter: function(value) { return value || ''; }
-          }
+  anchor: 'end',
+  align: 'top',
+  color: '#111',
+  font: { weight: 'bold', size: 10 },
+  formatter: value => value || ''
+}
         }
       }
     });

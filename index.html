@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Retail Pick Productivity Tracker</title>
   <!-- Importa a biblioteca SheetJS para exportação XLSX -->
-  <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
   <!-- FontAwesome para ícones -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <!-- PapaParse para ler corretamente CSVs BlueYonder com quebras de linha dentro das células -->
@@ -670,17 +670,20 @@ td.ticket-change-cell::after {
 }
 
 #dashboardTabContent .retail-dashboard-card {
-  padding: 10px 8px;
+  padding: 16px 8px;
   border-radius: 8px;
+  min-height: 78px;
 }
 
 #dashboardTabContent .retail-dashboard-card .card-title {
   font-size: 12px;
-  margin-bottom: 3px;
+  margin-bottom: 7px;
+  line-height: 16px;
 }
 
 #dashboardTabContent .retail-dashboard-card .card-value {
-  font-size: 20px;
+  font-size: 22px;
+  line-height: 25px;
 }
 
 /* Linha dos gráficos mais compacta */
@@ -785,19 +788,22 @@ td.ticket-change-cell::after {
 
 /* Cards CORE / AGY mais baixos */
 #summaryTabContent .retail-summary-card {
-  padding: 10px 9px;
-  border-radius: 9px;
+  padding: 15px 8px;
+  border-radius: 8px;
+  min-height: 78px;
 }
 
 /* Texto dos cards */
 #summaryTabContent .retail-summary-card .card-title {
   font-size: 12px;
-  margin-bottom: 3px;
+  margin-bottom: 7px;
+  line-height: 16px;
 }
 
 /* Valores dos cards */
 #summaryTabContent .retail-summary-card .card-value {
-  font-size: 21px;
+  font-size: 22px;
+  line-height: 25px;
 }
 
 /* Linha dos gráficos mais compacta */
@@ -808,8 +814,8 @@ td.ticket-change-cell::after {
 
 /* Cards dos gráficos mais baixos */
 #summaryTabContent .retail-chart-card {
-  min-height: 340px;
-  padding: 11px 13px;
+  min-height: 380px;
+  padding: 14px 16px;
 }
 
 /* Título dos gráficos */
@@ -820,14 +826,14 @@ td.ticket-change-cell::after {
 
 /* Altura dos gráficos Summary */
 #summaryTabContent .retail-chart-card canvas {
-  height: 285px !important;
+  height: 315px !important;
 }
 
 /* Tabelas de buckets mais compactas */
 #summaryTabContent .retail-dashboard-tables {
   gap: 12px;
-  margin-top: 60px;
-  }
+  margin-top: 8px;
+}
 
 /* Títulos das tabelas */
 #summaryTabContent .retail-dashboard-tables .retail-section-title {
@@ -880,7 +886,7 @@ td.ticket-change-cell::after {
         <i class="fa fa-users"></i><span class="btn-text">Summary</span>
       </button>
     </div>
-    <div class="user-info">Victor Ribeiro DHL(Supply Chain)</div>
+    <div class="user-info">Victor Ribeiro (DHL Supply Chain)</div>
   </div>
   <!-- Sidebar (fixa à esquerda) -->
   <nav class="sidebar">
@@ -969,22 +975,26 @@ td.ticket-change-cell::after {
           </tr>
           <!-- Linha de Filtros Integrada no Cabeçalho -->
           <tr class="filter-row">
-  <th></th>
   <th>
-  <div class="user-filter-inline">
-    <input
-      type="text"
-      id="filterUserId"
-      placeholder="Filter by User ID"
-    />
-
-    <select id="filterUserType">
+    <select id="filterDate">
       <option value="">All</option>
-      <option value="core">Core</option>
-      <option value="agy">AGY</option>
     </select>
-  </div>
-</th>
+  </th>
+  <th>
+    <div class="user-filter-inline">
+      <input
+        type="text"
+        id="filterUserId"
+        placeholder="Filter by User ID"
+      />
+
+      <select id="filterUserType">
+        <option value="">All</option>
+        <option value="core">Core</option>
+        <option value="agy">AGY</option>
+      </select>
+    </div>
+  </th>
   <th></th>
   <th></th>
   <th></th>
@@ -1339,6 +1349,19 @@ td.ticket-change-cell::after {
       }
       return date;
     }
+function normaliseDateForSort(date) {
+  if (!date) return '';
+
+  const parts = date.split(/[^\d]/).filter(Boolean);
+
+  if (parts.length < 3) return date;
+
+  let day = parts[0];
+  let month = parts[1];
+  let year = parts[2];
+
+  return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+}
 // Agora não reformatamos a data — vem pronta do CSV novo
 // (no teu código atual podes manter o teu formatDate, isto é só referência)
 function getFloor(location) {
@@ -1467,8 +1490,9 @@ function getUserType(userId) {
       const tableBody = document.querySelector('#productivityTable tbody');
       tableBody.innerHTML = '';
 
-      Object.entries(dataMap).forEach(([userId, stats]) => {
-        const { qty, inTime, outTime, totalHours, performance, performanceClass, totalGaps, nGaps, date, txnCount } = stats;
+      Object.entries(dataMap).forEach(([groupKey, stats]) => {
+  const userId = stats.userId || groupKey;
+  const { qty, inTime, outTime, totalHours, performance, performanceClass, totalGaps, nGaps, date, txnCount } = stats;
         const prodHours = formatDecimalToTime(qty / trackerTarget);
         const gapTxnPercent = txnCount ? ((nGaps / txnCount) * 100).toFixed(2) + "%" : "0.00%";
         const totalHoursDecimal = timeToSeconds(totalHours) / 3600;
@@ -1501,7 +1525,8 @@ function getUserType(userId) {
   const gapsTableBody = document.querySelector('#gapsTable tbody');
   gapsTableBody.innerHTML = '';
 
-  Object.entries(dataMap).forEach(([userId, stats]) => {
+ Object.entries(dataMap).forEach(([groupKey, stats]) => {
+  const userId = stats.userId || groupKey;
     const hasGaps = stats.nGaps > 0 && Array.isArray(stats.gapsList) && stats.gapsList.length > 0;
 
     if (hasGaps) {
@@ -1679,12 +1704,42 @@ function medianArray(values) {
     : sorted[mid];
 }
 
-function getFilteredRetailMapFromUI(dataMap) {
-  const performanceFilter = document.getElementById('filterPerformance').value;
-  const userIdFilter      = document.getElementById('filterUserId').value.toLowerCase();
-  const userTypeFilter    = document.getElementById('filterUserType').value;
+function populateDateFilter(dataMap) {
+  const filterDate = document.getElementById('filterDate');
+  if (!filterDate) return;
 
-  const filtered = Object.entries(dataMap).filter(([userId, stats]) => {
+  const currentValue = filterDate.value;
+
+  const dates = [...new Set(
+    Object.values(dataMap)
+      .map(stats => stats.date)
+      .filter(Boolean)
+  )].sort((a, b) => normaliseDateForSort(a).localeCompare(normaliseDateForSort(b)));
+
+  filterDate.innerHTML = '<option value="">All</option>';
+
+  dates.forEach(date => {
+    const option = document.createElement('option');
+    option.value = date;
+    option.textContent = date;
+    filterDate.appendChild(option);
+  });
+
+  filterDate.value = dates.includes(currentValue) ? currentValue : '';
+}
+
+function getFilteredRetailMapFromUI(dataMap) {
+  const dateFilter = document.getElementById('filterDate').value;
+  const performanceFilter = document.getElementById('filterPerformance').value;
+  const userIdFilter = document.getElementById('filterUserId').value.toLowerCase();
+  const userTypeFilter = document.getElementById('filterUserType').value;
+
+  const filtered = Object.entries(dataMap).filter(([groupKey, stats]) => {
+    const userId = stats.userId || groupKey;
+
+    const matchesDate =
+      !dateFilter || stats.date === dateFilter;
+
     const matchesPerformance =
       !performanceFilter || stats.performance.includes(performanceFilter);
 
@@ -1695,7 +1750,7 @@ function getFilteredRetailMapFromUI(dataMap) {
     const matchesUserType =
       !userTypeFilter || userType === userTypeFilter;
 
-    return matchesPerformance && matchesUserId && matchesUserType;
+    return matchesDate && matchesPerformance && matchesUserId && matchesUserType;
   });
 
   return Object.fromEntries(filtered);
@@ -1788,7 +1843,7 @@ function renderRetailDashboardCharts(dataMap) {
         responsive: true,
         maintainAspectRatio: true,
         aspectRatio: 1,
-        layout: { padding: 10 },
+        layout: { padding: 24 },
         plugins: {
           legend: { position: 'bottom' },
           tooltip: {
@@ -1801,13 +1856,27 @@ function renderRetailDashboardCharts(dataMap) {
             }
           },
           datalabels: {
-            color: '#ffffff',
-            font: { weight: 'bold', size: 12 },
-            formatter: function(value) {
-              if (!value || total === 0) return '';
-              return ((value / total) * 100).toFixed(1) + '%';
-            }
-          }
+  color: '#111',
+  anchor: 'end',
+  align: 'end',
+  offset: 10,
+  clamp: false,
+  clip: false,
+  font: {
+    weight: 'bold',
+    size: 11
+  },
+  formatter: function(value, context) {
+    if (!value || total === 0) return '';
+
+    const pct = ((value / total) * 100);
+
+    // Evita labels muito pequenas ficarem apertadas no gráfico
+    if (pct < 1) return '';
+
+    return pct.toFixed(1) + '%';
+  }
+}
         }
       }
     });
@@ -1879,12 +1948,15 @@ function renderRetailSummaryCharts(core, agy) {
             }
           },
           datalabels: {
-            anchor: 'end',
-            align: 'top',
-            color: '#111',
-            font: { weight: 'bold' },
-            formatter: value => value.toFixed(2) + '%'
-          }
+  anchor: 'end',
+  align: 'top',
+  color: '#111',
+  font: {
+    weight: 'bold',
+    size: 12
+  },
+  formatter: value => value.toFixed(2) + '%'
+}
         }
       }
     });
@@ -1923,12 +1995,15 @@ function renderRetailSummaryCharts(core, agy) {
         plugins: {
           legend: { position: 'bottom' },
           datalabels: {
-            anchor: 'end',
-            align: 'top',
-            color: '#111',
-            font: { weight: 'bold' },
-            formatter: value => value || ''
-          }
+  anchor: 'end',
+  align: 'top',
+  color: '#111',
+  font: {
+    weight: 'bold',
+    size: 12
+  },
+  formatter: value => value || ''
+}
         }
       }
     });
@@ -1944,22 +2019,35 @@ function updateRetailDashboard(dataMap) {
   let sumPerformance = 0;
   const performanceValues = [];
 
-  const users = entries.map(([userId, stats]) => {
-    const workedHours = timeToSeconds(stats.totalHours || '00:00:00') / 3600;
-    const perf = getPerformanceNumber(stats);
+  const users = entries.map(([groupKey, stats]) => {
+  const workedHours = timeToSeconds(stats.totalHours || '00:00:00') / 3600;
+  const perf = getPerformanceNumber(stats);
 
-    totalPicked += stats.qty || 0;
-    totalWorkedHours += workedHours;
-    totalGapsHours += stats.totalGaps || 0;
-    sumPerformance += perf;
-    performanceValues.push(perf);
+  totalPicked += stats.qty || 0;
+  totalWorkedHours += workedHours;
+  totalGapsHours += stats.totalGaps || 0;
+  sumPerformance += perf;
+  performanceValues.push(perf);
 
-    return {
-      userId,
-      performance: perf,
-      totalGaps: stats.totalGaps || 0
-    };
-  });
+  let displayUserId = stats.userId || groupKey;
+
+  if (String(groupKey).includes('|')) {
+    const [datePart, userPart] = String(groupKey).split('|');
+
+    const datePieces = datePart.split('-');
+    if (datePieces.length === 3) {
+      displayUserId = `${datePieces[2]}/${datePieces[1]}/${datePieces[0]} | ${userPart}`;
+    } else {
+      displayUserId = `${datePart} | ${userPart}`;
+    }
+  }
+
+  return {
+    userId: displayUserId,
+    performance: perf,
+    totalGaps: stats.totalGaps || 0
+  };
+});
 
   const totalUsers = entries.length;
   const avgPickHour = totalWorkedHours > 0 ? totalPicked / totalWorkedHours : 0;
@@ -2005,7 +2093,8 @@ function updateRetailDashboard(dataMap) {
 }
 
 function buildRetailSummaryStats(dataMap, type) {
-  const entries = Object.entries(dataMap).filter(([userId, stats]) => {
+  const entries = Object.entries(dataMap).filter(([groupKey, stats]) => {
+    const userId = stats.userId || groupKey;
     const userType = stats.userType || getUserType(userId);
     return userType === type;
   });
@@ -2023,7 +2112,7 @@ function buildRetailSummaryStats(dataMap, type) {
     'No Activity': 0
   };
 
-  entries.forEach(([userId, stats]) => {
+  entries.forEach(([groupKey, stats]) => {
     const workedHours = timeToSeconds(stats.totalHours || '00:00:00') / 3600;
     const perf = getPerformanceNumber(stats);
 
@@ -2110,17 +2199,27 @@ function updateRetailSummary(dataMap) {
     }
 
     /* ======================================================
-     * Lógica Principal e Eventos
-     * ====================================================== */
-    document.getElementById('csvFileInput').addEventListener('change', handleFileUpload);
-    document.getElementById('downloadReportBtnXLSX').addEventListener('click', downloadExcelReport);
-    // Botões de Navegação na Top Bar
-    document.getElementById('homeTabBtn').addEventListener('click', showHomeTab);
-    document.getElementById('gapsTabBtn').addEventListener('click', showGapsTab);
-    document.getElementById('dashboardTabBtn').addEventListener('click', showDashboardTab);
-    document.getElementById('summaryTabBtn').addEventListener('click', showSummaryTab);
-    // Eventos para os filtros integrados
-    document.getElementById('filterPerformance').addEventListener('change', () => {
+ * Lógica Principal e Eventos
+ * ====================================================== */
+document.getElementById('csvFileInput').addEventListener('change', handleFileUpload);
+document.getElementById('downloadReportBtnXLSX').addEventListener('click', downloadExcelReport);
+
+// Botões de Navegação na Top Bar
+document.getElementById('homeTabBtn').addEventListener('click', showHomeTab);
+document.getElementById('gapsTabBtn').addEventListener('click', showGapsTab);
+document.getElementById('dashboardTabBtn').addEventListener('click', showDashboardTab);
+document.getElementById('summaryTabBtn').addEventListener('click', showSummaryTab);
+
+// Eventos para os filtros integrados
+document.getElementById('filterDate').addEventListener('change', () => {
+  const savedData = localStorage.getItem('retailPickData');
+  if (savedData) {
+    const dataMap = JSON.parse(savedData);
+    applyFilters(dataMap);
+  }
+});
+
+document.getElementById('filterPerformance').addEventListener('change', () => {
   const savedData = localStorage.getItem('retailPickData');
   if (savedData) {
     const dataMap = JSON.parse(savedData);
@@ -2146,23 +2245,23 @@ document.getElementById('filterUserType').addEventListener('change', () => {
 
 
         window.onload = function () {
-      const savedData = localStorage.getItem('retailPickData');
+  const savedData = localStorage.getItem('retailPickData');
 
-      if (savedData) {
-        const dataMap = JSON.parse(savedData);
-        updateTable(dataMap);
-        updateStats(dataMap);
-        updateGapsTable(dataMap);
-        updateRetailDashboard(dataMap);
-        updateRetailSummary(dataMap);
-      }
+  if (savedData) {
+    const dataMap = JSON.parse(savedData);
 
-      // Garante que a Home esteja visível e o botão fique marcado
-      showHomeTab();
-    };
+    // Rebuild Date filter after page reload / reopen
+    populateDateFilter(dataMap);
 
+    // Refresh everything through the normal filter logic
+    applyFilters(dataMap);
+  }
 
-    function handleFileUpload(event) {
+  // Garante que a Home esteja visível e o botão fique marcado
+  showHomeTab();
+};
+
+   function handleFileUpload(event) {
       const file = event.target.files[0];
       if (!file) return;
       const reader = new FileReader();
@@ -2245,54 +2344,70 @@ document.getElementById('filterUserType').addEventListener('change', () => {
       }).filter(r => r.userId && r.time);
 
       parsedRows.sort((a, b) => {
-        if (a.userId !== b.userId) return a.userId.localeCompare(b.userId);
-        return a.sortKey.localeCompare(b.sortKey);
-      });
+  const dateA = normaliseDateForSort(a.date);
+  const dateB = normaliseDateForSort(b.date);
+
+  if (dateA !== dateB) return dateA.localeCompare(dateB);
+  if (a.userId !== b.userId) return a.userId.localeCompare(b.userId);
+
+  return a.sortKey.localeCompare(b.sortKey);
+});
 
       parsedRows.forEach(item => {
-        const { userId, qty, time, location, date, ticket } = item;
+  const { userId, qty, time, location, date, ticket } = item;
 
-        if (!dataMap[userId]) {
-          dataMap[userId] = {
-            qty: 0,
-            inTime: null,
-            outTime: null,
-            totalHours: 0,
-            performance: '',
-            performanceClass: '',
-            totalGaps: 0,
-            nGaps: 0,
-            date: date || '',
-            txnCount: 0,
-            locationIn: '',
-            locationOut: '',
-            gapsList: [],
-            userType: getUserType(userId)
-          };
+  // Group by Date + User ID to avoid mixing several days for the same user
+  const groupKey = `${normaliseDateForSort(date)}|${userId}`;
 
-          validEvents[userId] = [];
-          allEvents[userId] = [];
-        }
+  if (!dataMap[groupKey]) {
+    dataMap[groupKey] = {
+      userId: userId,
+      qty: 0,
+      inTime: time,
+      outTime: time,
+      totalHours: '00:00:00',
+      performance: '',
+      performanceClass: '',
+      totalGaps: 0,
+      nGaps: 0,
+      date: date,
+      txnCount: 0,
+      locationIn: location || '',
+      locationOut: location || '',
+      gapsList: [],
+      userType: getUserType(userId)
+    };
 
-        if (!dataMap[userId].date && date) dataMap[userId].date = date;
+    validEvents[groupKey] = [];
+    allEvents[groupKey] = [];
+  }
 
-        dataMap[userId].qty += qty;
-        dataMap[userId].txnCount++;
+  if (!dataMap[groupKey].date && date) dataMap[groupKey].date = date;
 
-        const eventObj = { time, location, date, ticket, sortKey: item.sortKey };
-        allEvents[userId].push(eventObj);
-        validEvents[userId].push(eventObj);
+  dataMap[groupKey].qty += qty;
+  dataMap[groupKey].txnCount++;
 
-        if (!dataMap[userId].inTime || item.sortKey < `${normaliseDateForSort(dataMap[userId].date)} ${dataMap[userId].inTime}`) {
-          dataMap[userId].inTime = time;
-          dataMap[userId].locationIn = location || '';
-        }
+  const eventObj = { time, location, date, ticket, sortKey: item.sortKey };
 
-        if (!dataMap[userId].outTime || item.sortKey > `${normaliseDateForSort(dataMap[userId].date)} ${dataMap[userId].outTime}`) {
-          dataMap[userId].outTime = time;
-          dataMap[userId].locationOut = location || '';
-        }
-      });
+  allEvents[groupKey].push(eventObj);
+  validEvents[groupKey].push(eventObj);
+
+  if (
+    !dataMap[groupKey].inTime ||
+    item.sortKey < `${normaliseDateForSort(dataMap[groupKey].date)} ${dataMap[groupKey].inTime}`
+  ) {
+    dataMap[groupKey].inTime = time;
+    dataMap[groupKey].locationIn = location || '';
+  }
+
+  if (
+    !dataMap[groupKey].outTime ||
+    item.sortKey > `${normaliseDateForSort(dataMap[groupKey].date)} ${dataMap[groupKey].outTime}`
+  ) {
+    dataMap[groupKey].outTime = time;
+    dataMap[groupKey].locationOut = location || '';
+  }
+});
 
       finaliseRetailDataMap(dataMap, validEvents, allEvents);
       return dataMap;
@@ -2465,13 +2580,12 @@ document.getElementById('filterUserType').addEventListener('change', () => {
     }
 
     function refreshRetailViews(dataMap) {
-      localStorage.setItem('retailPickData', JSON.stringify(dataMap));
-      updateTable(dataMap);
-      updateStats(dataMap);
-      updateGapsTable(dataMap);
-      updateRetailDashboard(dataMap);
-      updateRetailSummary(dataMap);
-    }
+  localStorage.setItem('retailPickData', JSON.stringify(dataMap));
+
+  // Populate Date filter first, then refresh all views using the active filters
+  populateDateFilter(dataMap);
+  applyFilters(dataMap);
+}
 
     function processCSV(csvText) {
       try {
@@ -2511,98 +2625,785 @@ document.getElementById('filterUserType').addEventListener('change', () => {
         alert('No data to download. Please upload a file first.');
         return;
       }
-      
-      const dataMap = JSON.parse(savedData);
-      const header = ['Date', 'User ID', 'Qty', 'In Time', 'Out Time', 'Total Hours', 'Prod. Hours', 'Performance', 'Total Gaps', 'N. Gaps', 'Qty. Tnx', 'Gap vs Txn%', 'Avg. P. Hours'];
-      const allData = [header.slice()];
-      const wellDoneData = [header.slice()];
-      const almostThereData = [header.slice()];
-      const poorData = [header.slice()];
-  
-      Object.entries(dataMap).forEach(([userId, stats]) => {
-        const { qty, inTime, outTime, totalHours, performance, totalGaps, nGaps, date, txnCount } = stats;
-        const prodHours = formatDecimalToTime(qty / trackerTarget);
-        const gapTxnPercent = txnCount ? ((nGaps / txnCount) * 100).toFixed(2) + "%" : "0.00%";
-        const totalHoursDecimal = timeToSeconds(totalHours) / 3600;
-        const avgPHours = totalHoursDecimal > 0 ? (qty / totalHoursDecimal).toFixed(2) : "0";
-        
-        const row = [
-          date,
-          userId,
-          qty,
-          inTime,
-          outTime,
-          totalHours,
-          prodHours,
-          performance,
-          formatDecimalToTime(totalGaps),
-          nGaps,
-          txnCount,
-          gapTxnPercent,
-          avgPHours
-        ];
-        allData.push(row);
-        if (performance.includes('Well Done')) {
-          wellDoneData.push(row);
-        } else if (performance.includes('Almost There')) {
-          almostThereData.push(row);
-        } else if (performance.includes('Poor')) {
-          poorData.push(row);
-        }
-      });
-      
-      const gapsHeader = ['Date', 'User ID', 'Location IN', 'Location OUT', 'In Time', 'Out Time', 'Gap Time', 'Gap #', 'Same Floor?', 'Ticket From', 'Ticket To', 'Ticket Change?'];
-      const gapsData = [gapsHeader.slice()];
-      Object.entries(dataMap).forEach(([userId, stats]) => {
-        if (stats.nGaps > 0 && stats.gapsList && stats.gapsList.length > 0) {
-          stats.gapsList.forEach((gapObj, index) => {
-            const gapTimeFormatted = formatDecimalToTime(gapObj.gapSec / 3600);
-            const floorIn  = getFloor(gapObj.locationIn);
-            const floorOut = getFloor(gapObj.locationOut);
-            const sameFloor = floorIn && floorOut && floorIn === floorOut;
 
-            const row = [
-              stats.date,
-              userId,
-              gapObj.locationIn || '',
-              gapObj.locationOut || '',
-              gapObj.start,
-              gapObj.end,
-              gapTimeFormatted,
-              index + 1,
-              sameFloor ? 'Yes' : 'No',
-              gapObj.ticketFrom || '',
-              gapObj.ticketTo || '',
-              gapObj.ticketChange ? 'Yes' : 'No'
-            ];
-            gapsData.push(row);
+      const dataMap = JSON.parse(savedData);
+      const workbook = XLSX.utils.book_new();
+
+      const C = {
+        yellow: 'FFCC00',
+        red: 'D40511',
+        black: '000000',
+        dark: '111111',
+        white: 'FFFFFF',
+        lightYellow: 'FFF2CC',
+        lightRed: 'F8D7DA',
+        lightGreen: 'D4EDDA',
+        lightGrey: 'F2F2F2',
+        grey: 'D9D9D9',
+        dhlGrey: '666666',
+        orange: 'FCE4D6',
+        softOrange: 'FDE9D9'
+      };
+
+      const borderThin = {
+        top: { style: 'thin', color: { rgb: 'B7B7B7' } },
+        bottom: { style: 'thin', color: { rgb: 'B7B7B7' } },
+        left: { style: 'thin', color: { rgb: 'B7B7B7' } },
+        right: { style: 'thin', color: { rgb: 'B7B7B7' } }
+      };
+
+      function styleCell(ws, ref, style) {
+        if (!ws[ref]) ws[ref] = { t: 's', v: '' };
+        ws[ref].s = Object.assign({}, ws[ref].s || {}, style);
+      }
+
+      function styleRange(ws, range, style) {
+        const decoded = XLSX.utils.decode_range(range);
+        for (let r = decoded.s.r; r <= decoded.e.r; r++) {
+          for (let c = decoded.s.c; c <= decoded.e.c; c++) {
+            const ref = XLSX.utils.encode_cell({ r, c });
+            styleCell(ws, ref, style);
+          }
+        }
+      }
+
+      function setCols(ws, widths) {
+        ws['!cols'] = widths.map(w => ({ wch: w }));
+      }
+
+      function setRows(ws, heights) {
+        ws['!rows'] = heights.map(h => ({ hpt: h }));
+      }
+
+      function addMerge(ws, range) {
+        if (!ws['!merges']) ws['!merges'] = [];
+        ws['!merges'].push(XLSX.utils.decode_range(range));
+      }
+
+      function addAutoFilter(ws, range) {
+        ws['!autofilter'] = { ref: range };
+      }
+
+      function hideGridlines(ws) {
+        // Multiple compatible flags to hide Excel gridlines across XLSX readers
+        ws['!views'] = [{ showGridLines: false, showGridlines: false }];
+        ws['!gridlines'] = false;
+        ws['!gridline'] = false;
+        ws['!sheetView'] = { showGridLines: false, showGridlines: false };
+      }
+function getDisplayUserId(groupKey, stats) {
+  if (stats && stats.userId) return stats.userId;
+
+  const textKey = String(groupKey || '');
+  if (textKey.includes('|')) {
+    return textKey.split('|').pop();
+  }
+
+  return textKey;
+}
+      function paintWhiteCanvas(ws, maxRows, maxCols) {
+        // Creates a clean white canvas around the report area.
+        // This visually hides gridlines even when Excel keeps the Gridlines checkbox enabled.
+        for (let r = 0; r < maxRows; r++) {
+          for (let c = 0; c < maxCols; c++) {
+            const ref = XLSX.utils.encode_cell({ r, c });
+            if (!ws[ref]) ws[ref] = { t: 's', v: '' };
+            if (!ws[ref].s) ws[ref].s = {};
+            if (!ws[ref].s.fill) {
+              ws[ref].s.fill = {
+                patternType: 'solid',
+                fgColor: { rgb: C.white }
+              };
+            }
+          }
+        }
+
+        const canvasRange = XLSX.utils.decode_range(
+          `A1:${XLSX.utils.encode_cell({ r: maxRows - 1, c: maxCols - 1 }).replace(/[0-9]/g, '')}${maxRows}`
+        );
+        const currentRange = ws['!ref'] ? XLSX.utils.decode_range(ws['!ref']) : canvasRange;
+        currentRange.s.r = Math.min(currentRange.s.r, canvasRange.s.r);
+        currentRange.s.c = Math.min(currentRange.s.c, canvasRange.s.c);
+        currentRange.e.r = Math.max(currentRange.e.r, canvasRange.e.r);
+        currentRange.e.c = Math.max(currentRange.e.c, canvasRange.e.c);
+        ws['!ref'] = XLSX.utils.encode_range(currentRange);
+      }
+
+      function makeTitle(ws, titleRange, subtitleRange, title, subtitle) {
+        const titleCell = titleRange.split(':')[0];
+        const subtitleCell = subtitleRange.split(':')[0];
+        if (ws[titleCell]) ws[titleCell].v = title;
+        if (ws[subtitleCell]) ws[subtitleCell].v = subtitle;
+        addMerge(ws, titleRange);
+        addMerge(ws, subtitleRange);
+        styleRange(ws, titleRange, {
+          fill: { fgColor: { rgb: C.red } },
+          font: { color: { rgb: C.white }, bold: true, sz: 18 },
+          alignment: { horizontal: 'center', vertical: 'center' },
+          border: borderThin
+        });
+        styleRange(ws, subtitleRange, {
+          fill: { fgColor: { rgb: C.yellow } },
+          font: { color: { rgb: C.black }, bold: true, sz: 11 },
+          alignment: { horizontal: 'center', vertical: 'center' },
+          border: borderThin
+        });
+      }
+
+      function applyHeaderStyle(ws, rowIndexOneBased, colCount) {
+        for (let c = 0; c < colCount; c++) {
+          const ref = XLSX.utils.encode_cell({ r: rowIndexOneBased - 1, c });
+          styleCell(ws, ref, {
+            fill: { fgColor: { rgb: C.black } },
+            font: { color: { rgb: C.white }, bold: true, sz: 11 },
+            alignment: { horizontal: 'center', vertical: 'center', wrapText: true },
+            border: borderThin
           });
         }
-      });
-  
-      const workbook = XLSX.utils.book_new();
-      const wsAll = XLSX.utils.aoa_to_sheet(allData);
-      const wsWellDone = XLSX.utils.aoa_to_sheet(wellDoneData);
-      const wsAlmostThere = XLSX.utils.aoa_to_sheet(almostThereData);
-      const wsPoor = XLSX.utils.aoa_to_sheet(poorData);
-      const wsGaps = XLSX.utils.aoa_to_sheet(gapsData);
-  
-      setFontSize(wsAll, 11);
-      setFontSize(wsWellDone, 11);
-      setFontSize(wsAlmostThere, 11);
-      setFontSize(wsPoor, 11);
-      setFontSize(wsGaps, 11);
-  
-      XLSX.utils.book_append_sheet(workbook, wsAll, "All Data");
-      XLSX.utils.book_append_sheet(workbook, wsWellDone, "Well Done");
-      XLSX.utils.book_append_sheet(workbook, wsAlmostThere, "Almost There");
-      XLSX.utils.book_append_sheet(workbook, wsPoor, "Poor");
-      XLSX.utils.book_append_sheet(workbook, wsGaps, "Gaps Breakdown");
-  
-      XLSX.writeFile(workbook, "Retail_Pick_Report.xlsx");
+      }
+
+      function applyBodyStyle(ws, startRowOneBased, endRowOneBased, colCount) {
+        for (let r = startRowOneBased - 1; r <= endRowOneBased - 1; r++) {
+          for (let c = 0; c < colCount; c++) {
+            const ref = XLSX.utils.encode_cell({ r, c });
+            const even = (r - (startRowOneBased - 1)) % 2 === 0;
+            styleCell(ws, ref, {
+              fill: { fgColor: { rgb: even ? C.white : C.lightGrey } },
+              font: { color: { rgb: C.black }, sz: 10 },
+              alignment: { horizontal: c === 1 ? 'left' : 'center', vertical: 'center', wrapText: true },
+              border: borderThin
+            });
+          }
+        }
+      }
+
+      function getPerfNumberFromStats(stats) {
+        const hours = timeToSeconds(stats.totalHours || '00:00:00') / 3600;
+        return hours > 0 ? (stats.qty / (hours * trackerTarget)) * 100 : 0;
+      }
+
+      function getSummaryMetrics(map) {
+        const entries = Object.entries(map);
+        let totalPicked = 0;
+        let totalWorkedHours = 0;
+        let totalGapsHours = 0;
+        let sumPerformance = 0;
+        const perfValues = [];
+
+        entries.forEach(([groupKey, stats]) => {
+          const workedHours = timeToSeconds(stats.totalHours || '00:00:00') / 3600;
+          const perf = getPerfNumberFromStats(stats);
+          totalPicked += stats.qty || 0;
+          totalWorkedHours += workedHours;
+          totalGapsHours += stats.totalGaps || 0;
+          sumPerformance += perf;
+          perfValues.push(perf);
+        });
+
+        const totalUsers = entries.length;
+        return {
+          totalUsers,
+          totalPicked,
+          totalWorkedHours,
+          totalGapsHours,
+          avgPickHour: totalWorkedHours > 0 ? totalPicked / totalWorkedHours : 0,
+          avgPerformance: totalUsers > 0 ? sumPerformance / totalUsers : 0,
+          medianPerformance: medianArray(perfValues),
+          userEquivalentLost: totalGapsHours / 7.5
+        };
+      }
+
+      function getBucketCounts(map) {
+        const counts = {
+          'Well Done': 0,
+          'Almost There': 0,
+          'Poor': 0,
+          'No Activity': 0
+        };
+        Object.values(map).forEach(stats => {
+          counts[getPerformanceBucket(stats)]++;
+        });
+        return counts;
+      }
+
+
+      function getLpnPrefix(value) {
+        const txt = String(value || '').toUpperCase().trim();
+        const match = txt.match(/^(OX|BR|TR|ME)/);
+        return match ? match[1] : 'Unknown';
+      }
+
+      function collectGapItems(map) {
+        const items = [];
+        Object.entries(map).forEach(([groupKey, stats]) => {
+  const userId = getDisplayUserId(groupKey, stats);
+          if (!stats.gapsList || !Array.isArray(stats.gapsList)) return;
+          stats.gapsList.forEach(gapObj => {
+            const floorIn = getFloor(gapObj.locationIn);
+            const floorOut = getFloor(gapObj.locationOut);
+            const sameFloor = floorIn && floorOut && floorIn === floorOut;
+            const unknownFloor = !floorIn || !floorOut || floorIn === 'unknown' || floorOut === 'unknown';
+            const gapHours = (gapObj.gapSec || 0) / 3600;
+            items.push({
+              userId,
+              gapHours,
+              sameFloor,
+              unknownFloor,
+              movementType: unknownFloor ? 'Unknown Floor' : (sameFloor ? 'Same Floor' : 'Cross Floor'),
+              ticketFrom: gapObj.ticketFrom || '',
+              ticketTo: gapObj.ticketTo || '',
+              ticketChange: Boolean(gapObj.ticketChange),
+              prefix: getLpnPrefix(gapObj.ticketTo || gapObj.ticketFrom || '')
+            });
+          });
+        });
+        return items;
+      }
+
+      function addToUserBreakdown(container, key, userId, gapHours) {
+        if (!container[key]) container[key] = {};
+        if (!container[key][userId]) container[key][userId] = { count: 0, hours: 0 };
+        container[key][userId].count += 1;
+        container[key][userId].hours += gapHours;
+      }
+
+      function getTopUserText(userMap) {
+        const entries = Object.entries(userMap || {});
+        if (!entries.length) return '';
+        entries.sort((a, b) => b[1].hours - a[1].hours);
+        const [userId, obj] = entries[0];
+        return `${userId} (${formatDecimalToTime(obj.hours)})`;
+      }
+
+      function buildFloorMovementRows(map) {
+        const gapItems = collectGapItems(map);
+        const totalGaps = gapItems.length || 1;
+        const keys = ['Same Floor', 'Cross Floor', 'Unknown Floor'];
+        const stats = {};
+        const users = {};
+
+        keys.forEach(k => {
+          stats[k] = { count: 0, hours: 0 };
+          users[k] = {};
+        });
+
+        gapItems.forEach(item => {
+          const key = item.movementType;
+          stats[key].count += 1;
+          stats[key].hours += item.gapHours;
+          addToUserBreakdown(users, key, item.userId, item.gapHours);
+        });
+
+        const maxCount = Math.max(...keys.map(k => stats[k].count), 1);
+        return keys.map(key => {
+          const count = stats[key].count;
+          const hours = stats[key].hours;
+          return [
+            key,
+            count,
+            ((count / totalGaps) * 100).toFixed(1) + '%',
+            formatDecimalToTime(hours),
+            count > 0 ? formatDecimalToTime(hours / count) : '00:00:00',
+            getTopUserText(users[key]),
+            makeBar(count, maxCount, 18)
+          ];
+        });
+      }
+
+      function buildStoreLpnRows(map) {
+        const gapItems = collectGapItems(map);
+        const prefixes = ['OX', 'BR', 'TR', 'ME', 'Unknown'];
+        const stats = {};
+        prefixes.forEach(p => {
+          stats[p] = { gaps: 0, hours: 0, changes: 0, same: 0, cross: 0 };
+        });
+
+        gapItems.forEach(item => {
+          const p = prefixes.includes(item.prefix) ? item.prefix : 'Unknown';
+          stats[p].gaps += 1;
+          stats[p].hours += item.gapHours;
+          if (item.ticketChange) stats[p].changes += 1;
+          if (item.sameFloor) stats[p].same += 1;
+          else stats[p].cross += 1;
+        });
+
+        const maxGaps = Math.max(...prefixes.map(p => stats[p].gaps), 1);
+        return prefixes.map(prefix => {
+          const s = stats[prefix];
+          return [
+            prefix,
+            s.gaps,
+            s.changes,
+            formatDecimalToTime(s.hours),
+            s.gaps > 0 ? formatDecimalToTime(s.hours / s.gaps) : '00:00:00',
+            s.same,
+            s.cross,
+            makeBar(s.gaps, maxGaps, 18)
+          ];
+        });
+      }
+
+      function makeBar(value, maxValue, size) {
+        if (!maxValue || maxValue <= 0 || !value) return '';
+        const count = Math.max(1, Math.round((value / maxValue) * size));
+        return '█'.repeat(count);
+      }
+
+      function buildRetailRows(map) {
+        const header = ['Date', 'User ID', 'Qty', 'In Time', 'Out Time', 'Total Hours', 'Prod. Hours', 'Performance', 'Total Gaps', 'N. Gaps', 'Qty. Tnx', 'Gap vs Txn%', 'Avg. P. Hours'];
+        const rows = [header];
+
+        Object.entries(map).forEach(([groupKey, stats]) => {
+  const userId = getDisplayUserId(groupKey, stats);
+          const { qty, inTime, outTime, totalHours, performance, totalGaps, nGaps, date, txnCount } = stats;
+          const prodHours = formatDecimalToTime(qty / trackerTarget);
+          const gapTxnPercent = txnCount ? ((nGaps / txnCount) * 100).toFixed(2) + '%' : '0.00%';
+          const totalHoursDecimal = timeToSeconds(totalHours || '00:00:00') / 3600;
+          const avgPHours = totalHoursDecimal > 0 ? (qty / totalHoursDecimal).toFixed(0) : '0';
+
+          rows.push([
+            date || '',
+            userId,
+            qty || 0,
+            inTime || 'N/A',
+            outTime || 'N/A',
+            totalHours || '00:00:00',
+            prodHours,
+            performance || '',
+            formatDecimalToTime(totalGaps || 0),
+            nGaps || 0,
+            txnCount || 0,
+            gapTxnPercent,
+            avgPHours
+          ]);
+        });
+
+        return rows;
+      }
+
+      function buildGapsRows(map) {
+        const header = ['Date', 'User ID', 'Location IN', 'Location OUT', 'In Time', 'Out Time', 'Gap Time', 'Gap #', 'Same Floor?', 'LPN From', 'LPN To', 'Ticket Change?'];
+        const rows = [header];
+
+        Object.entries(map).forEach(([groupKey, stats]) => {
+  const userId = getDisplayUserId(groupKey, stats);
+          if (stats.nGaps > 0 && Array.isArray(stats.gapsList) && stats.gapsList.length > 0) {
+            stats.gapsList.forEach((gapObj, index) => {
+              const floorIn = getFloor(gapObj.locationIn);
+              const floorOut = getFloor(gapObj.locationOut);
+              const sameFloor = floorIn && floorOut && floorIn === floorOut;
+              rows.push([
+                stats.date || '',
+                userId,
+                gapObj.locationIn || '',
+                gapObj.locationOut || '',
+                gapObj.start || 'N/A',
+                gapObj.end || 'N/A',
+                formatDecimalToTime((gapObj.gapSec || 0) / 3600),
+                index + 1,
+                sameFloor ? 'Yes' : 'No',
+                gapObj.ticketFrom || '',
+                gapObj.ticketTo || '',
+                gapObj.ticketChange ? 'Yes' : 'No'
+              ]);
+            });
+          }
+        });
+
+        return rows;
+      }
+
+      function addRetailDataSheet() {
+        const retailRows = buildRetailRows(dataMap);
+        const data = [
+          ['Retail Pick Productivity Report'],
+          ['DHL / Selfridges | Premium Export | Retail Data'],
+          [],
+          ...retailRows
+        ];
+        const ws = XLSX.utils.aoa_to_sheet(data);
+        makeTitle(ws, 'A1:M1', 'A2:M2', 'Retail Pick Productivity Report', 'DHL / Selfridges | Premium Export | Retail Data');
+        applyHeaderStyle(ws, 4, 13);
+        applyBodyStyle(ws, 5, data.length, 13);
+        addAutoFilter(ws, `A4:M${data.length}`);
+        ws['!freeze'] = { xSplit: 0, ySplit: 4 };
+        setCols(ws, [12, 18, 10, 12, 12, 14, 14, 24, 14, 10, 10, 12, 14]);
+        setRows(ws, [28, 20, 6, 28, ...Array(Math.max(0, data.length - 4)).fill(18)]);
+
+        for (let r = 4; r < data.length; r++) {
+          const perf = String(data[r][7] || '');
+          const ref = XLSX.utils.encode_cell({ r, c: 7 });
+          let fill = C.white;
+          if (perf.includes('Well Done')) fill = C.lightGreen;
+          else if (perf.includes('Almost There')) fill = C.lightYellow;
+          else if (perf.includes('Poor')) fill = C.lightRed;
+          styleCell(ws, ref, {
+            fill: { fgColor: { rgb: fill } },
+            font: { color: { rgb: C.black }, bold: true, sz: 10 },
+            alignment: { horizontal: 'center', vertical: 'center' },
+            border: borderThin
+          });
+        }
+
+        paintWhiteCanvas(ws, 120, 26);
+        hideGridlines(ws);
+        XLSX.utils.book_append_sheet(workbook, ws, 'Retail Data');
+      }
+
+      function addGapsSheet() {
+        const gapsRows = buildGapsRows(dataMap);
+        const data = [
+          ['Retail Pick Gaps Report'],
+          ['Same Floor / Cross Floor / Ticket Change Review'],
+          [],
+          ...gapsRows
+        ];
+        const ws = XLSX.utils.aoa_to_sheet(data);
+        makeTitle(ws, 'A1:L1', 'A2:L2', 'Retail Pick Gaps Report', 'Same Floor / Cross Floor / Ticket Change Review');
+        applyHeaderStyle(ws, 4, 12);
+        applyBodyStyle(ws, 5, data.length, 12);
+        addAutoFilter(ws, `A4:L${data.length}`);
+        ws['!freeze'] = { xSplit: 0, ySplit: 4 };
+        setCols(ws, [12, 18, 18, 18, 12, 12, 12, 8, 12, 15, 15, 14]);
+        setRows(ws, [28, 20, 6, 28, ...Array(Math.max(0, data.length - 4)).fill(18)]);
+
+        for (let r = 4; r < data.length; r++) {
+          const sameFloor = String(data[r][8] || '');
+          const ticketChange = String(data[r][11] || '');
+          const rowFill = sameFloor === 'Yes' ? C.lightGreen : C.lightRed;
+          for (let c = 0; c < 12; c++) {
+            styleCell(ws, XLSX.utils.encode_cell({ r, c }), {
+              fill: { fgColor: { rgb: rowFill } },
+              font: { color: { rgb: C.black }, sz: 10 },
+              alignment: { horizontal: 'center', vertical: 'center', wrapText: true },
+              border: borderThin
+            });
+          }
+          if (ticketChange === 'Yes') {
+            // Keep the row colour only from Same Floor / Cross Floor logic.
+            // Ticket/LPN change is marked elegantly only on LPN From / LPN To.
+            [9, 10].forEach(c => {
+              const lpnRef = XLSX.utils.encode_cell({ r, c });
+              if (ws[lpnRef] && ws[lpnRef].v) {
+                const cleanValue = String(ws[lpnRef].v).replace(/^\*\s*/, '').replace(/\s*\*$/, '');
+                ws[lpnRef].v = `* ${cleanValue} *`;
+              }
+              styleCell(ws, lpnRef, {
+                fill: { fgColor: { rgb: rowFill } },
+                font: { color: { rgb: C.black }, bold: false, sz: 10 },
+                alignment: { horizontal: 'center', vertical: 'center', wrapText: true },
+                border: borderThin
+              });
+            });
+          }
+        }
+
+        paintWhiteCanvas(ws, 120, 26);
+        hideGridlines(ws);
+        XLSX.utils.book_append_sheet(workbook, ws, 'Gaps Report');
+      }
+
+      function addDashboardSheet() {
+        const m = getSummaryMetrics(dataMap);
+        const buckets = getBucketCounts(dataMap);
+        const bucketMax = Math.max(...Object.values(buckets), 1);
+        const offset = 6; // Start the report layout on column G (G:N)
+        const blank = Array(offset).fill('');
+        const shift = row => blank.concat(row);
+
+        const users = Object.entries(dataMap).map(([groupKey, stats]) => {
+  const userId = getDisplayUserId(groupKey, stats);
+
+  return {
+    userId,
+    performance: getPerfNumberFromStats(stats),
+    totalGaps: stats.totalGaps || 0
+  };
+});
+
+        const topPerformance = [...users].sort((a, b) => b.performance - a.performance).slice(0, 10);
+const bottomPerformance = [...users].sort((a, b) => a.performance - b.performance).slice(0, 10);
+const topGaps = [...users].sort((a, b) => b.totalGaps - a.totalGaps).slice(0, 5);
+
+        const bucketRows = [
+  ...Object.entries(buckets),
+  ['Total', m.totalUsers]
+];
+const rawData = [
+  ['Retail Pick Dashboard'],
+  ['DHL / Selfridges | Premium KPI Overview'],
+  [],
+  ['KPI', 'Value', '', 'KPI', 'Value', '', 'KPI', 'Value'],
+  ['Total Users', m.totalUsers, '', 'Total Picked', m.totalPicked, '', 'Avg Pick/h', m.avgPickHour.toFixed(0)],
+  ['Avg Performance', m.avgPerformance.toFixed(2) + '%', '', 'Median Performance', m.medianPerformance.toFixed(2) + '%', '', 'Total Gaps', formatDecimalToTime(m.totalGapsHours)],
+  ['User-equivalents Lost', m.userEquivalentLost.toFixed(2), '', 'Total Worked Hours', formatDecimalToTime(m.totalWorkedHours), '', 'Target', trackerTarget],
+  [],
+  ['Performance Buckets', 'Users', 'Share', 'Visual Bar', '', 'Top 5 Total Gaps', 'User ID', 'Total Gaps'],
+
+  ...Array.from({ length: 5 }).map((_, i) => {
+  const bucket = bucketRows[i];
+  const bucketName = bucket ? bucket[0] : '';
+  const bucketCount = bucket ? bucket[1] : '';
+  const bucketShare = bucket && m.totalUsers ? ((bucket[1] / m.totalUsers) * 100).toFixed(1) + '%' : '';
+  const bucketBar = bucket ? makeBar(bucket[1], m.totalUsers, 20) : '';
+
+  return [
+    bucketName,
+    bucketCount,
+    bucketShare,
+    bucketBar,
+    '',
+    i + 1,
+    topGaps[i]?.userId || '',
+    topGaps[i] ? formatDecimalToTime(topGaps[i].totalGaps) : ''
+  ];
+}),
+
+  [],
+  ['Bottom 10 Performance', 'User ID', 'Performance', '', '', 'Top 10 Performance', 'User ID', 'Performance'],
+
+  ...Array.from({ length: 10 }).map((_, i) => [
+  i + 1,
+  bottomPerformance[i]?.userId || '',
+  bottomPerformance[i] ? bottomPerformance[i].performance.toFixed(2) + '%' : '',
+  '',
+  '',
+  i + 1,
+  topPerformance[i]?.userId || '',
+  topPerformance[i] ? topPerformance[i].performance.toFixed(2) + '%' : ''
+])
+];
+
+        const data = rawData.map(shift);
+        const ws = XLSX.utils.aoa_to_sheet(data);
+        makeTitle(ws, 'G1:N1', 'G2:N2', 'Retail Pick Dashboard', 'DHL / Selfridges | Premium KPI Overview');
+        setCols(ws, [8.43, 8.43, 8.43, 8.43, 8.43, 8.43, 22, 16, 12, 26, 18, 17.14, 22, 16, 8.43, 8.43, 8.43, 8.43, 8.43, 8.43, 8.43]);
+        setRows(ws, Array(data.length).fill(20));
+        ws['!rows'][0] = { hpt: 30 };
+        ws['!rows'][1] = { hpt: 22 };
+
+        // KPI header and cards
+        styleRange(ws, 'G4:N4', { fill: { fgColor: { rgb: C.black } }, font: { color: { rgb: C.white }, bold: true }, alignment: { horizontal: 'center', vertical: 'center' }, border: borderThin });
+        styleRange(ws, 'G5:N7', { fill: { fgColor: { rgb: C.dark } }, font: { color: { rgb: C.yellow }, bold: true, sz: 13 }, alignment: { horizontal: 'center', vertical: 'center' }, border: borderThin });
+        if (ws['K5']) ws['K5'].z = '#,##0';
+        ['G5', 'J5', 'M5', 'G6', 'J6', 'M6', 'G7', 'J7', 'M7'].forEach(ref => styleCell(ws, ref, { font: { color: { rgb: C.white }, bold: true, sz: 11 }, fill: { fgColor: { rgb: C.black } }, alignment: { horizontal: 'center' }, border: borderThin }));
+
+        // Section headers
+['G9:J9', 'L9:N9', 'G16:I16', 'L16:N16'].forEach(range => {
+  styleRange(ws, range, {
+    fill: { fgColor: { rgb: C.red } },
+    font: { color: { rgb: C.white }, bold: true },
+    alignment: { horizontal: 'center' },
+    border: borderThin
+  });
+});
+
+// Performance Buckets
+styleRange(ws, 'G10:J14', {
+  fill: { fgColor: { rgb: C.lightYellow } },
+  font: { color: { rgb: C.black }, sz: 10 },
+  alignment: { horizontal: 'center' },
+  border: borderThin
+});
+styleRange(ws, 'J10:J14', {
+  font: { color: { rgb: C.dhlGrey }, bold: true, sz: 11 },
+  alignment: { horizontal: 'left' }
+});
+
+// Top 5 Total Gaps
+styleRange(ws, 'L10:N14', {
+  fill: { fgColor: { rgb: C.lightYellow } },
+  font: { color: { rgb: C.black }, sz: 10 },
+  alignment: { horizontal: 'center' },
+  border: borderThin
+});
+
+// Bottom 10 Performance
+styleRange(ws, 'G17:I26', {
+  fill: { fgColor: { rgb: C.lightRed } },
+  font: { color: { rgb: C.black }, sz: 10 },
+  alignment: { horizontal: 'center' },
+  border: borderThin
+});
+
+styleRange(ws, 'L17:N26', {
+  fill: { fgColor: { rgb: C.lightGreen } },
+  font: { color: { rgb: C.black }, sz: 10 },
+  alignment: { horizontal: 'center' },
+  border: borderThin
+});
+
+        paintWhiteCanvas(ws, 80, 26);
+        hideGridlines(ws);
+        XLSX.utils.book_append_sheet(workbook, ws, 'Dashboard');
+      }
+
+      function addSummarySheet() {
+        const core = buildRetailSummaryStats(dataMap, 'core');
+        const agy = buildRetailSummaryStats(dataMap, 'agy');
+        const offset = 6; // Start the report layout on column G (G:M)
+        const blank = Array(offset).fill('');
+        const shift = row => blank.concat(row);
+
+        const rawData = [
+          ['Retail Pick Summary — CORE × AGY'],
+          ['DHL / Selfridges | Workforce Type Comparison'],
+          [],
+          ['Group', 'Users', 'Total Picked', 'Avg Performance', 'Median Performance', 'Avg Pick/h', 'Total Gaps'],
+          ['CORE', core.users, core.totalPicked, core.avgPerformance.toFixed(2) + '%', core.medianPerformance.toFixed(2) + '%', core.avgPickHour.toFixed(0), formatDecimalToTime(core.totalGapsHours)],
+          ['AGY', agy.users, agy.totalPicked, agy.avgPerformance.toFixed(2) + '%', agy.medianPerformance.toFixed(2) + '%', agy.avgPickHour.toFixed(0), formatDecimalToTime(agy.totalGapsHours)],
+          [],
+          ['CORE Performance Buckets', 'Users', 'Visual Bar', '', 'AGY Performance Buckets', 'Users', 'Visual Bar']
+        ];
+
+        const bucketLabels = ['Well Done', 'Almost There', 'Poor', 'No Activity'];
+        const coreMax = Math.max(...Object.values(core.buckets), 1);
+        const agyMax = Math.max(...Object.values(agy.buckets), 1);
+        bucketLabels.forEach(label => {
+          rawData.push([
+            label,
+            core.buckets[label] || 0,
+            makeBar(core.buckets[label] || 0, coreMax, 18),
+            '',
+            label,
+            agy.buckets[label] || 0,
+            makeBar(agy.buckets[label] || 0, agyMax, 18)
+          ]);
+        });
+
+        const data = rawData.map(shift);
+        const ws = XLSX.utils.aoa_to_sheet(data);
+        makeTitle(ws, 'G1:M1', 'G2:M2', 'Retail Pick Summary — CORE × AGY', 'DHL / Selfridges | Workforce Type Comparison');
+        setCols(ws, [8.43, 8.43, 8.43, 8.43, 8.43, 8.43, 24, 12, 34, 16, 24, 12, 34, 8.43, 8.43, 8.43, 8.43, 8.43, 8.43]);
+        setRows(ws, Array(data.length).fill(20));
+        ws['!rows'][0] = { hpt: 30 };
+        ws['!rows'][1] = { hpt: 22 };
+
+        // Summary headers and data
+        for (let c = 6; c <= 12; c++) {
+          const ref = XLSX.utils.encode_cell({ r: 3, c });
+          styleCell(ws, ref, {
+            fill: { fgColor: { rgb: C.black } },
+            font: { color: { rgb: C.white }, bold: true, sz: 11 },
+            alignment: { horizontal: 'center', vertical: 'center', wrapText: true },
+            border: borderThin
+          });
+        }
+
+        styleRange(ws, 'G5:M5', { fill: { fgColor: { rgb: C.lightGreen } }, font: { color: { rgb: C.black }, bold: true, sz: 11 }, alignment: { horizontal: 'center' }, border: borderThin });
+        styleRange(ws, 'G6:M6', { fill: { fgColor: { rgb: C.orange } }, font: { color: { rgb: C.black }, bold: true, sz: 11 }, alignment: { horizontal: 'center' }, border: borderThin });
+        styleRange(ws, 'G8:I8', { fill: { fgColor: { rgb: C.black } }, font: { color: { rgb: C.white }, bold: true }, alignment: { horizontal: 'center' }, border: borderThin });
+        styleRange(ws, 'K8:M8', { fill: { fgColor: { rgb: C.black } }, font: { color: { rgb: C.white }, bold: true }, alignment: { horizontal: 'center' }, border: borderThin });
+        styleRange(ws, `G9:I${8 + bucketLabels.length}`, { fill: { fgColor: { rgb: C.lightGreen } }, font: { color: { rgb: C.black }, sz: 10 }, alignment: { horizontal: 'center' }, border: borderThin });
+        styleRange(ws, `I9:I${8 + bucketLabels.length}`, { font: { color: { rgb: C.dhlGrey }, bold: true, sz: 11 }, alignment: { horizontal: 'left' } });
+        styleRange(ws, `K9:M${8 + bucketLabels.length}`, { fill: { fgColor: { rgb: C.orange } }, font: { color: { rgb: C.black }, sz: 10 }, alignment: { horizontal: 'center' }, border: borderThin });
+styleRange(ws, `M9:M${8 + bucketLabels.length}`, { font: { color: { rgb: C.dhlGrey }, bold: true, sz: 11 }, alignment: { horizontal: 'left' } });
+
+/* Apply thousand separator to Total Picked values */
+['I5', 'I6'].forEach(cellRef => {
+  if (ws[cellRef]) {
+    ws[cellRef].v = Number(ws[cellRef].v) || 0;
+    ws[cellRef].t = 'n';
+    ws[cellRef].z = '#,##0';
+  }
+});
+
+paintWhiteCanvas(ws, 80, 26);
+hideGridlines(ws);
+XLSX.utils.book_append_sheet(workbook, ws, 'Summary CORE AGY');
+      }
+
+
+      function addFloorMovementSheet() {
+        const offset = 6; // Start on G:M
+        const blank = Array(offset).fill('');
+        const shift = row => blank.concat(row);
+        const movementRows = buildFloorMovementRows(dataMap);
+        const rawData = [
+          ['Retail Pick Floor Movement Analysis'],
+          ['DHL / Selfridges | Same Floor vs Cross Floor Review'],
+          [],
+          ['Movement Type', 'Gaps', 'Share', 'Total Gap Time', 'Avg Gap Time', 'Top User by Gap Time', 'Visual Bar'],
+          ...movementRows
+        ];
+
+        const data = rawData.map(shift);
+        const ws = XLSX.utils.aoa_to_sheet(data);
+        makeTitle(ws, 'G1:M1', 'G2:M2', 'Retail Pick Floor Movement Analysis', 'DHL / Selfridges | Same Floor vs Cross Floor Review');
+        setCols(ws, [8.43, 8.43, 8.43, 8.43, 8.43, 8.43, 24, 12, 14, 18, 16, 28, 34, 8.43, 8.43, 8.43, 8.43, 8.43, 8.43]);
+        setRows(ws, Array(data.length).fill(20));
+        ws['!rows'][0] = { hpt: 30 };
+        ws['!rows'][1] = { hpt: 22 };
+
+        styleRange(ws, 'G4:M4', { fill: { fgColor: { rgb: C.black } }, font: { color: { rgb: C.white }, bold: true, sz: 11 }, alignment: { horizontal: 'center', vertical: 'center', wrapText: true }, border: borderThin });
+        for (let r = 4; r < data.length; r++) {
+          const movement = String(data[r][6] || '');
+          let fill = C.lightGrey;
+          if (movement === 'Same Floor') fill = C.lightGreen;
+          else if (movement === 'Cross Floor') fill = C.lightRed;
+          else fill = C.lightYellow;
+          styleRange(ws, `G${r + 1}:M${r + 1}`, { fill: { fgColor: { rgb: fill } }, font: { color: { rgb: C.black }, sz: 10 }, alignment: { horizontal: 'center', vertical: 'center', wrapText: true }, border: borderThin });
+          styleCell(ws, `M${r + 1}`, { fill: { fgColor: { rgb: fill } }, font: { color: { rgb: C.dhlGrey }, bold: true, sz: 11 }, alignment: { horizontal: 'left', vertical: 'center' }, border: borderThin });
+        }
+
+        paintWhiteCanvas(ws, 80, 26);
+        hideGridlines(ws);
+        XLSX.utils.book_append_sheet(workbook, ws, 'Floor Movement');
+      }
+
+      function addStoreLpnSheet() {
+        const offset = 6; // Start on G:N
+        const blank = Array(offset).fill('');
+        const shift = row => blank.concat(row);
+        const storeRows = buildStoreLpnRows(dataMap);
+        const rawData = [
+          ['Retail Pick Store / LPN Analysis'],
+          ['DHL / Selfridges | LPN Prefix Gap Review'],
+          [],
+          ['Store Prefix', 'Total Gaps', 'LPN Changes', 'Total Gap Time', 'Avg Gap Time', 'Same Floor', 'Cross Floor', 'Visual Bar'],
+          ...storeRows
+        ];
+
+        const data = rawData.map(shift);
+        const ws = XLSX.utils.aoa_to_sheet(data);
+        makeTitle(ws, 'G1:N1', 'G2:N2', 'Retail Pick Store / LPN Analysis', 'DHL / Selfridges | LPN Prefix Gap Review');
+        setCols(ws, [8.43, 8.43, 8.43, 8.43, 8.43, 8.43, 16, 14, 16, 18, 16, 14, 14, 34, 8.43, 8.43, 8.43, 8.43, 8.43, 8.43]);
+        setRows(ws, Array(data.length).fill(20));
+        ws['!rows'][0] = { hpt: 30 };
+        ws['!rows'][1] = { hpt: 22 };
+
+        styleRange(ws, 'G4:N4', { fill: { fgColor: { rgb: C.black } }, font: { color: { rgb: C.white }, bold: true, sz: 11 }, alignment: { horizontal: 'center', vertical: 'center', wrapText: true }, border: borderThin });
+        for (let r = 4; r < data.length; r++) {
+          const prefix = String(data[r][6] || '');
+          let fill = C.lightYellow;
+          if (prefix === 'OX') fill = C.lightGreen;
+          else if (prefix === 'BR') fill = 'D9EAF7';
+          else if (prefix === 'TR') fill = C.lightYellow;
+          else if (prefix === 'ME') fill = C.orange;
+          else fill = C.lightGrey;
+          styleRange(ws, `G${r + 1}:N${r + 1}`, { fill: { fgColor: { rgb: fill } }, font: { color: { rgb: C.black }, sz: 10 }, alignment: { horizontal: 'center', vertical: 'center', wrapText: true }, border: borderThin });
+          styleCell(ws, `N${r + 1}`, { fill: { fgColor: { rgb: fill } }, font: { color: { rgb: C.dhlGrey }, bold: true, sz: 11 }, alignment: { horizontal: 'left', vertical: 'center' }, border: borderThin });
+        }
+
+        paintWhiteCanvas(ws, 80, 26);
+        hideGridlines(ws);
+        XLSX.utils.book_append_sheet(workbook, ws, 'Store LPN Analysis');
+      }
+
+      addRetailDataSheet();
+      addGapsSheet();
+      addDashboardSheet();
+      addSummarySheet();
+      addFloorMovementSheet();
+      addStoreLpnSheet();
+
+      const now = new Date();
+      const stamp = now.toISOString().slice(0, 19).replace(/[:T]/g, '-');
+      XLSX.writeFile(workbook, `Retail_Pick_Premium_Report_${stamp}.xlsx`, { cellStyles: true });
     }
+
   </script>
-   <!-- ======= Proteção mínima (insere AQUI, antes de </body>) ======= -->
+<!-- ======= Proteção mínima (insere AQUI, antes de </body>) ======= -->
   <style>
   /* bloqueia seleção globalmente */
   * { -webkit-user-select: none; -ms-user-select: none; user-select: none; }
@@ -2671,5 +3472,6 @@ document.addEventListener('keydown', e => {
 </script>
 
   <!-- ======= fim proteção mínima ======= -->
+  
 </body>
 </html>

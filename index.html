@@ -1500,20 +1500,20 @@ function getUserType(userId) {
         
         const row = document.createElement('tr');
         row.innerHTML = `
-          <td style="min-width:100px;">${date || ''}</td>
-          <td>${userId}</td>
-          <td>${qty}</td>
-          <td>${inTime || 'N/A'}</td>
-          <td>${outTime || 'N/A'}</td>
-          <td>${totalHours || '00:00:00'}</td>
-          <td>${prodHours}</td>
-          <td class="${performanceClass}">${performance}</td>
-          <td>${formatDecimalToTime(totalGaps)}</td>
-          <td>${nGaps || 0}</td>
-          <td>${txnCount}</td>
-          <td>${gapTxnPercent}</td>
-          <td>${avgPHours}</td>
-        `;
+  <td style="min-width:100px;">${date || ''}</td>
+  <td class="allow-copy">${userId}</td>
+  <td>${qty}</td>
+  <td>${inTime || 'N/A'}</td>
+  <td>${outTime || 'N/A'}</td>
+  <td>${totalHours || '00:00:00'}</td>
+  <td>${prodHours}</td>
+  <td class="${performanceClass}">${performance}</td>
+  <td>${formatDecimalToTime(totalGaps)}</td>
+  <td>${nGaps || 0}</td>
+  <td>${txnCount}</td>
+  <td>${gapTxnPercent}</td>
+  <td>${avgPHours}</td>
+`;
         tableBody.appendChild(row);
       });
     }
@@ -3413,12 +3413,17 @@ XLSX.utils.book_append_sheet(workbook, ws, 'Summary CORE AGY');
     -webkit-user-select: text; -ms-user-select: text; user-select: text;
   }
 
-  /* libera dentro das abas (Home, Gaps, etc.) */
-  .allow-copy, .allow-copy * {
-    -webkit-user-select: text !important;
-    -ms-user-select: text !important;
-    user-select: text !important;
-  }
+  /* libera seleção apenas onde aplicarmos a classe allow-copy */
+.allow-copy, .allow-copy * {
+  -webkit-user-select: text !important;
+  -ms-user-select: text !important;
+  user-select: text !important;
+}
+
+/* visual: mostra cursor de texto nas células liberadas */
+#productivityTable td.allow-copy {
+  cursor: text;
+}
 </style>
 
 

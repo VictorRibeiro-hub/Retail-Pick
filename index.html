@@ -1028,7 +1028,9 @@ td.ticket-change-cell::after {
         <th style="min-width:100px;">Date</th>
         <th>User ID</th>
         <th>Location IN</th>
+        <th>Qty IN</th>
         <th>Location OUT</th>
+        <th>Qty OUT</th>
         <th>In Time</th>
         <th>Out Time</th>
         <th>Gap Time</th>
@@ -1525,8 +1527,8 @@ function getUserType(userId) {
   const gapsTableBody = document.querySelector('#gapsTable tbody');
   gapsTableBody.innerHTML = '';
 
- Object.entries(dataMap).forEach(([groupKey, stats]) => {
-  const userId = stats.userId || groupKey;
+  Object.entries(dataMap).forEach(([groupKey, stats]) => {
+    const userId = stats.userId || groupKey;
     const hasGaps = stats.nGaps > 0 && Array.isArray(stats.gapsList) && stats.gapsList.length > 0;
 
     if (hasGaps) {
@@ -1535,7 +1537,7 @@ function getUserType(userId) {
         const gapTimeFormatted = formatDecimalToTime(gapObj.gapSec / 3600);
 
         // Same floor / cross floor usando a lógica do Retail
-        const floorIn  = getFloor(gapObj.locationIn);
+        const floorIn = getFloor(gapObj.locationIn);
         const floorOut = getFloor(gapObj.locationOut);
         const sameFloor = floorIn && floorOut && floorIn === floorOut;
 
@@ -1562,7 +1564,9 @@ function getUserType(userId) {
           <td>${stats.date || ''}</td>
           <td>${userId}</td>
           <td>${gapObj.locationIn || ''}</td>
+          <td>${gapObj.qtyIn || 0}</td>
           <td>${gapObj.locationOut || ''}</td>
+          <td>${gapObj.qtyOut || 0}</td>
           <td>${gapObj.start || 'N/A'}</td>
           <td>${gapObj.end || 'N/A'}</td>
           <td class="${gapCellClass}">${gapTimeFormatted}</td>
@@ -1571,9 +1575,10 @@ function getUserType(userId) {
         `;
 
         // Ticket/LPN change marker: same concept as Online Tracker List ID change
+        // Agora Location IN está na coluna 2 e Location OUT está na coluna 4
         if (gapObj.ticketChange) {
           const tds = row.querySelectorAll('td');
-          [2, 3].forEach(i => {
+          [2, 4].forEach(i => {
             if (tds[i]) {
               tds[i].classList.add('ticket-change-cell');
               tds[i].title = `Ticket/LPN: ${gapObj.ticketFrom || ''} → ${gapObj.ticketTo || ''}`;
@@ -2387,10 +2392,10 @@ document.getElementById('filterUserType').addEventListener('change', () => {
   dataMap[groupKey].qty += qty;
   dataMap[groupKey].txnCount++;
 
-  const eventObj = { time, location, date, ticket, sortKey: item.sortKey };
+  const eventObj = { time, location, date, ticket, qty, sortKey: item.sortKey };
 
-  allEvents[groupKey].push(eventObj);
-  validEvents[groupKey].push(eventObj);
+   allEvents[groupKey].push(eventObj);
+   validEvents[groupKey].push(eventObj);
 
   if (
     !dataMap[groupKey].inTime ||
@@ -2532,15 +2537,17 @@ document.getElementById('filterUserType').addEventListener('change', () => {
             dataMap[userId].totalGaps += gapHours;
             dataMap[userId].nGaps += 1;
             dataMap[userId].gapsList.push({
-              gapSec: diffSec,
-              start: prevObj.time,
-              end: currObj.time,
-              locationIn: prevObj.location,
-              locationOut: currObj.location,
-              ticketFrom,
-              ticketTo,
-              ticketChange
-            });
+                                gapSec: diffSec,
+                                start: prevObj.time,
+                                end: currObj.time,
+                               locationIn: prevObj.location,
+                               locationOut: currObj.location,
+                               qtyIn: prevObj.qty || 0,
+                               qtyOut: currObj.qty || 0,
+                                ticketFrom,
+                                ticketTo,
+                               ticketChange
+                           });
           }
         }
       });
@@ -2982,36 +2989,56 @@ function getDisplayUserId(groupKey, stats) {
       }
 
       function buildGapsRows(map) {
-        const header = ['Date', 'User ID', 'Location IN', 'Location OUT', 'In Time', 'Out Time', 'Gap Time', 'Gap #', 'Same Floor?', 'LPN From', 'LPN To', 'Ticket Change?'];
-        const rows = [header];
+  const header = [
+    'Date',
+    'User ID',
+    'Location IN',
+    'Qty IN',
+    'Location OUT',
+    'Qty OUT',
+    'In Time',
+    'Out Time',
+    'Gap Time',
+    'Gap #',
+    'Same Floor?',
+    'LPN From',
+    'LPN To',
+    'Ticket Change?'
+  ];
 
-        Object.entries(map).forEach(([groupKey, stats]) => {
-  const userId = getDisplayUserId(groupKey, stats);
-          if (stats.nGaps > 0 && Array.isArray(stats.gapsList) && stats.gapsList.length > 0) {
-            stats.gapsList.forEach((gapObj, index) => {
-              const floorIn = getFloor(gapObj.locationIn);
-              const floorOut = getFloor(gapObj.locationOut);
-              const sameFloor = floorIn && floorOut && floorIn === floorOut;
-              rows.push([
-                stats.date || '',
-                userId,
-                gapObj.locationIn || '',
-                gapObj.locationOut || '',
-                gapObj.start || 'N/A',
-                gapObj.end || 'N/A',
-                formatDecimalToTime((gapObj.gapSec || 0) / 3600),
-                index + 1,
-                sameFloor ? 'Yes' : 'No',
-                gapObj.ticketFrom || '',
-                gapObj.ticketTo || '',
-                gapObj.ticketChange ? 'Yes' : 'No'
-              ]);
-            });
-          }
-        });
+  const rows = [header];
 
-        return rows;
-      }
+  Object.entries(map).forEach(([groupKey, stats]) => {
+    const userId = getDisplayUserId(groupKey, stats);
+
+    if (stats.nGaps > 0 && Array.isArray(stats.gapsList) && stats.gapsList.length > 0) {
+      stats.gapsList.forEach((gapObj, index) => {
+        const floorIn = getFloor(gapObj.locationIn);
+        const floorOut = getFloor(gapObj.locationOut);
+        const sameFloor = floorIn && floorOut && floorIn === floorOut;
+
+        rows.push([
+          stats.date || '',
+          userId,
+          gapObj.locationIn || '',
+          gapObj.qtyIn || 0,
+          gapObj.locationOut || '',
+          gapObj.qtyOut || 0,
+          gapObj.start || 'N/A',
+          gapObj.end || 'N/A',
+          formatDecimalToTime((gapObj.gapSec || 0) / 3600),
+          index + 1,
+          sameFloor ? 'Yes' : 'No',
+          gapObj.ticketFrom || '',
+          gapObj.ticketTo || '',
+          gapObj.ticketChange ? 'Yes' : 'No'
+        ]);
+      });
+    }
+  });
+
+  return rows;
+}
 
       function addRetailDataSheet() {
         const retailRows = buildRetailRows(dataMap);
@@ -3051,57 +3078,69 @@ function getDisplayUserId(groupKey, stats) {
       }
 
       function addGapsSheet() {
-        const gapsRows = buildGapsRows(dataMap);
-        const data = [
-          ['Retail Pick Gaps Report'],
-          ['Same Floor / Cross Floor / Ticket Change Review'],
-          [],
-          ...gapsRows
-        ];
-        const ws = XLSX.utils.aoa_to_sheet(data);
-        makeTitle(ws, 'A1:L1', 'A2:L2', 'Retail Pick Gaps Report', 'Same Floor / Cross Floor / Ticket Change Review');
-        applyHeaderStyle(ws, 4, 12);
-        applyBodyStyle(ws, 5, data.length, 12);
-        addAutoFilter(ws, `A4:L${data.length}`);
-        ws['!freeze'] = { xSplit: 0, ySplit: 4 };
-        setCols(ws, [12, 18, 18, 18, 12, 12, 12, 8, 12, 15, 15, 14]);
-        setRows(ws, [28, 20, 6, 28, ...Array(Math.max(0, data.length - 4)).fill(18)]);
+  const gapsRows = buildGapsRows(dataMap);
+  const data = [
+    ['Retail Pick Gaps Report'],
+    ['Same Floor / Cross Floor / Ticket Change Review'],
+    [],
+    ...gapsRows
+  ];
 
-        for (let r = 4; r < data.length; r++) {
-          const sameFloor = String(data[r][8] || '');
-          const ticketChange = String(data[r][11] || '');
-          const rowFill = sameFloor === 'Yes' ? C.lightGreen : C.lightRed;
-          for (let c = 0; c < 12; c++) {
-            styleCell(ws, XLSX.utils.encode_cell({ r, c }), {
-              fill: { fgColor: { rgb: rowFill } },
-              font: { color: { rgb: C.black }, sz: 10 },
-              alignment: { horizontal: 'center', vertical: 'center', wrapText: true },
-              border: borderThin
-            });
-          }
-          if (ticketChange === 'Yes') {
-            // Keep the row colour only from Same Floor / Cross Floor logic.
-            // Ticket/LPN change is marked elegantly only on LPN From / LPN To.
-            [9, 10].forEach(c => {
-              const lpnRef = XLSX.utils.encode_cell({ r, c });
-              if (ws[lpnRef] && ws[lpnRef].v) {
-                const cleanValue = String(ws[lpnRef].v).replace(/^\*\s*/, '').replace(/\s*\*$/, '');
-                ws[lpnRef].v = `* ${cleanValue} *`;
-              }
-              styleCell(ws, lpnRef, {
-                fill: { fgColor: { rgb: rowFill } },
-                font: { color: { rgb: C.black }, bold: false, sz: 10 },
-                alignment: { horizontal: 'center', vertical: 'center', wrapText: true },
-                border: borderThin
-              });
-            });
-          }
-        }
+  const ws = XLSX.utils.aoa_to_sheet(data);
 
-        paintWhiteCanvas(ws, 120, 26);
-        hideGridlines(ws);
-        XLSX.utils.book_append_sheet(workbook, ws, 'Gaps Report');
-      }
+  makeTitle(ws, 'A1:N1', 'A2:N2', 'Retail Pick Gaps Report', 'Same Floor / Cross Floor / Ticket Change Review');
+
+  applyHeaderStyle(ws, 4, 14);
+  applyBodyStyle(ws, 5, data.length, 14);
+
+  addAutoFilter(ws, `A4:N${data.length}`);
+
+  ws['!freeze'] = { xSplit: 0, ySplit: 4 };
+
+  setCols(ws, [
+    12, // Date
+    18, // User ID
+    18, // Location IN
+    10, // Qty IN
+    18, // Location OUT
+    10, // Qty OUT
+    12, // In Time
+    12, // Out Time
+    12, // Gap Time
+    8,  // Gap #
+    12, // Same Floor?
+    15, // LPN From
+    15, // LPN To
+    14  // Ticket Change?
+  ]);
+
+  setRows(ws, [28, 20, 6, 28, ...Array(Math.max(0, data.length - 4)).fill(18)]);
+
+  for (let r = 4; r < data.length; r++) {
+    const sameFloor = String(data[r][10] || '');
+    const ticketChange = String(data[r][13] || '');
+    const rowFill = sameFloor === 'Yes' ? C.lightGreen : C.lightRed;
+
+    for (let c = 0; c < 14; c++) {
+      const ref = XLSX.utils.encode_cell({ r, c });
+
+      styleCell(ws, ref, {
+        fill: { fgColor: { rgb: rowFill } },
+        font: {
+          color: { rgb: C.black },
+          sz: 10,
+          bold: ticketChange === 'Yes' && (c === 2 || c === 4)
+        },
+        alignment: { horizontal: 'center', vertical: 'center' },
+        border: borderThin
+      });
+    }
+  }
+
+  paintWhiteCanvas(ws, 120, 26);
+  hideGridlines(ws);
+  XLSX.utils.book_append_sheet(workbook, ws, 'Gaps Report');
+}
 
       function addDashboardSheet() {
         const m = getSummaryMetrics(dataMap);

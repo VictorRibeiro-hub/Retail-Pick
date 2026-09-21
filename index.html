@@ -858,7 +858,145 @@ td.ticket-change-cell::after {
 #summaryTabContent .tab-bottom-spacer {
   height: 5px;
 }
-  </style>
+
+/* ======================================================
+   HOURLY PRODUCTIVITY TAB
+   ====================================================== */
+
+#hourlyTabContent {
+  margin-top: 12px;
+  padding-bottom: 90px;
+}
+
+/* Permite tabela larga sem afetar as restantes abas */
+.hourly-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: visible;
+  padding-bottom: 10px;
+  margin-top: 4px;
+}
+
+/* Tabela principal */
+#hourlyProductivityTable {
+  width: 100%;
+  min-width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+  background-color: #fff;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  margin-top: 10px;
+}
+
+/* Cabeçalho */
+#hourlyProductivityTable thead th {
+  position: sticky;
+  top: 8px;
+  z-index: 5;
+  background-color: #000;
+  color: #fff;
+  font-size: 13px;
+  font-weight: bold;
+  padding: 6px 10px;
+  border: 1px solid #ddd;
+  border-bottom: 2px solid #333;
+  white-space: nowrap;
+  text-align: center;
+}
+#hourlyProductivityTable thead {
+  box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+}
+/* Corpo */
+#hourlyProductivityTable tbody td {
+  font-size: 14px;
+  padding: 5px 10px;
+  border: 1px solid #ddd;
+  white-space: nowrap;
+  text-align: center;
+  line-height: 1.2;
+}
+
+/* User ID */
+/* ======================================================
+   HOURLY ELASTIC COLUMNS
+   As larguras reais são calculadas automaticamente
+   pelo JavaScript conforme o espaço disponível.
+   ====================================================== */
+
+/* User ID */
+#hourlyProductivityTable th:nth-child(1),
+#hourlyProductivityTable td:nth-child(1) {
+  white-space: nowrap;
+}
+
+/* Date */
+#hourlyProductivityTable th:nth-child(2),
+#hourlyProductivityTable td:nth-child(2) {
+  white-space: nowrap;
+}
+
+/* Colunas horárias */
+#hourlyProductivityTable .hourly-hour-column {
+  min-width: 0;
+  padding-left: var(--hourly-padding-x, 5px);
+  padding-right: var(--hourly-padding-x, 5px);
+  font-size: var(--hourly-font-size, 13px);
+}
+
+/* Performance / Total Picked / Avg Pick/h */
+#hourlyProductivityTable .hourly-summary-column {
+  min-width: 0;
+}
+/* ======================================================
+   STICKY USER ID + DATE
+   Mantém identificação visível durante scroll horizontal
+   ====================================================== */
+
+/* User ID - corpo */
+#hourlyProductivityTable tbody td:nth-child(1) {
+  position: sticky;
+  left: 0;
+  z-index: 3;
+  background-color: #fff;
+}
+
+/* Date - corpo */
+#hourlyProductivityTable tbody td:nth-child(2) {
+  position: sticky;
+  left: var(--hourly-user-width, 130px);
+  z-index: 3;
+  background-color: #fff;
+}
+
+/* User ID - header */
+#hourlyProductivityTable thead th:nth-child(1) {
+  left: 0;
+  z-index: 8;
+  background-color: #000;
+}
+
+/* Date - header */
+#hourlyProductivityTable thead th:nth-child(2) {
+  left: var(--hourly-user-width, 130px);
+  z-index: 8;
+  background-color: #000;
+}
+
+/* Mantém o hover também nas duas colunas fixas */
+#hourlyProductivityTable tbody tr:hover td:nth-child(1),
+#hourlyProductivityTable tbody tr:hover td:nth-child(2) {
+  background-color: #f1f1f1;
+}
+
+/* Mensagem quando ainda não existem dados horários */
+#hourlyProductivityTable .hourly-no-data {
+  padding: 22px;
+  color: #666;
+  font-style: italic;
+  background-color: #fff;
+}
+
+</style>
 </head>
 <body>
   <!-- Top Bar -->
@@ -871,12 +1009,16 @@ td.ticket-change-cell::after {
     <!-- Botões de Navegação na Top Bar -->
     <div class="tab-nav">
       <button class="tab-btn" id="homeTabBtn" data-target="homeTabContent" title="Home">
-        <i class="fa fa-home"></i><span class="btn-text">Home</span>
-      </button>
+  <i class="fa fa-home"></i><span class="btn-text">Home</span>
+</button>
 
-      <button class="tab-btn" id="gapsTabBtn" data-target="gapsTabContent" title="Gaps">
-        <i class="fa fa-chart-bar"></i><span class="btn-text">Gaps</span>
-      </button>
+<button class="tab-btn" id="hourlyTabBtn" data-target="hourlyTabContent" title="Hourly Productivity">
+  <i class="fa fa-clock"></i><span class="btn-text">Hourly</span>
+</button>
+
+<button class="tab-btn" id="gapsTabBtn" data-target="gapsTabContent" title="Gaps">
+  <i class="fa fa-chart-bar"></i><span class="btn-text">Gaps</span>
+</button>
 
       <button class="tab-btn" id="dashboardTabBtn" data-target="dashboardTabContent" title="Dashboard">
         <i class="fa fa-chart-pie"></i><span class="btn-text">Dashboard</span>
@@ -983,10 +1125,10 @@ td.ticket-change-cell::after {
   <th>
     <div class="user-filter-inline">
       <input
-        type="text"
-        id="filterUserId"
-        placeholder="Filter by User ID"
-      />
+  type="text"
+  id="filterUserId"
+  placeholder="Filter by ID or Name"
+/>
 
       <select id="filterUserType">
         <option value="">All</option>
@@ -1021,6 +1163,66 @@ td.ticket-change-cell::after {
         </tbody>
       </table>
     </div>
+<!-- Hourly Productivity Tab -->
+<div id="hourlyTabContent" style="display: none;">
+
+  <div class="retail-section-title">
+    <i class="fa fa-clock"></i> Hourly Productivity
+  </div>
+
+  <div class="hourly-table-wrap">
+
+    <table id="hourlyProductivityTable">
+
+      <thead>
+        <tr id="hourlyHeaderRow">
+
+          <th>User ID</th>
+
+          <th>Date</th>
+
+          <!--
+            As colunas horárias serão inseridas dinamicamente aqui.
+            Exemplo:
+            08:00 | 09:00 | 10:00 | 11:00...
+          -->
+
+          <th
+            id="hourlyPerformanceHeader"
+            class="hourly-summary-column"
+          >
+            Performance
+          </th>
+
+          <th class="hourly-summary-column">
+            Total Picked
+          </th>
+
+          <th class="hourly-summary-column">
+            Avg Pick/h
+          </th>
+
+        </tr>
+      </thead>
+
+      <tbody id="hourlyProductivityTableBody">
+
+        <tr>
+          <td
+            colspan="5"
+            class="hourly-no-data"
+          >
+            Hourly productivity data will appear here.
+          </td>
+        </tr>
+
+      </tbody>
+
+    </table>
+
+  </div>
+
+</div>
 <div id="gapsTabContent" style="display: none;">
   <table id="gapsTable">
     <thead>
@@ -1310,11 +1512,24 @@ td.ticket-change-cell::after {
     }
 
     function ensureTimeFormat(time) {
-      const parts = time.split(':');
-      return parts.length === 2 ? `${time}:00` : time;
-    }
+  const parts = time.split(':');
+  return parts.length === 2 ? `${time}:00` : time;
+}
 
-    function calculateSecondsDifference(start, end) {
+function getHourBucket(time) {
+  if (!time) return '';
+
+  const formattedTime = ensureTimeFormat(String(time).trim());
+  const hour = parseInt(formattedTime.split(':')[0], 10);
+
+  if (Number.isNaN(hour) || hour < 0 || hour > 23) {
+    return '';
+  }
+
+  return `${String(hour).padStart(2, '0')}:00`;
+}
+
+function calculateSecondsDifference(start, end) {
       start = ensureTimeFormat(start.trim());
       end = ensureTimeFormat(end.trim());
       const startSec = timeToSeconds(start);
@@ -1408,28 +1623,48 @@ function getUserType(userId) {
     }
 
     function hideAllTabs() {
-      document.getElementById('homeTabContent').style.display = 'none';
-      document.getElementById('gapsTabContent').style.display = 'none';
+  document.getElementById('homeTabContent').style.display = 'none';
+  document.getElementById('hourlyTabContent').style.display = 'none';
+  document.getElementById('gapsTabContent').style.display = 'none';
 
-      const dashboardTab = document.getElementById('dashboardTabContent');
-      const summaryTab = document.getElementById('summaryTabContent');
+  const dashboardTab = document.getElementById('dashboardTabContent');
+  const summaryTab = document.getElementById('summaryTabContent');
 
-      if (dashboardTab) dashboardTab.style.display = 'none';
-      if (summaryTab) summaryTab.style.display = 'none';
-    }
+  if (dashboardTab) dashboardTab.style.display = 'none';
+  if (summaryTab) summaryTab.style.display = 'none';
+}
 
     function showHomeTab() {
-      hideAllTabs();
-      document.getElementById('homeTabContent').style.display = 'block';
-      setActiveTab('homeTabBtn');
+  hideAllTabs();
+  document.getElementById('homeTabContent').style.display = 'block';
+  setActiveTab('homeTabBtn');
 
-      const savedData = localStorage.getItem('retailPickData');
-      if (savedData) {
-        applyFilters(JSON.parse(savedData));
-      }
-    }
+  const savedData = localStorage.getItem('retailPickData');
+  if (savedData) {
+    applyFilters(JSON.parse(savedData));
+  }
+}
 
-    function showGapsTab() {
+function showHourlyTab() {
+  hideAllTabs();
+
+  document.getElementById(
+    'hourlyTabContent'
+  ).style.display = 'block';
+
+  setActiveTab('hourlyTabBtn');
+
+  const savedData =
+    localStorage.getItem('retailPickData');
+
+  if (savedData) {
+    applyFilters(
+      JSON.parse(savedData)
+    );
+  }
+}
+
+function showGapsTab() {
       hideAllTabs();
       document.getElementById('gapsTabContent').style.display = 'block';
       setActiveTab('gapsTabBtn');
@@ -1494,7 +1729,20 @@ function getUserType(userId) {
 
       Object.entries(dataMap).forEach(([groupKey, stats]) => {
   const userId = stats.userId || groupKey;
-  const { qty, inTime, outTime, totalHours, performance, performanceClass, totalGaps, nGaps, date, txnCount } = stats;
+  const userDisplay = stats.userDisplay || userId;
+
+  const {
+    qty,
+    inTime,
+    outTime,
+    totalHours,
+    performance,
+    performanceClass,
+    totalGaps,
+    nGaps,
+    date,
+    txnCount
+  } = stats;
         const prodHours = formatDecimalToTime(qty / trackerTarget);
         const gapTxnPercent = txnCount ? ((nGaps / txnCount) * 100).toFixed(2) + "%" : "0.00%";
         const totalHoursDecimal = timeToSeconds(totalHours) / 3600;
@@ -1503,7 +1751,7 @@ function getUserType(userId) {
         const row = document.createElement('tr');
         row.innerHTML = `
   <td style="min-width:100px;">${date || ''}</td>
-  <td class="allow-copy">${userId}</td>
+  <td class="allow-copy">${userDisplay}</td>
   <td>${qty}</td>
   <td>${inTime || 'N/A'}</td>
   <td>${outTime || 'N/A'}</td>
@@ -1519,6 +1767,506 @@ function getUserType(userId) {
         tableBody.appendChild(row);
       });
     }
+    /* ======================================================
+     * Atualização da Tabela Hourly Productivity
+     * ====================================================== */
+function applyHourlyElasticLayout(hourCount) {
+  const wrap =
+    document.querySelector('.hourly-table-wrap');
+
+  const table =
+    document.getElementById('hourlyProductivityTable');
+
+  const headerRow =
+    document.getElementById('hourlyHeaderRow');
+
+  if (!wrap || !table || !headerRow) {
+    return;
+  }
+
+  const availableWidth =
+    Math.floor(wrap.clientWidth);
+
+  /*
+    Quando a aba está escondida,
+    clientWidth pode ser zero.
+    Nesse caso não recalculamos.
+  */
+  if (availableWidth <= 0) {
+    return;
+  }
+
+  /*
+    Larguras reservadas para colunas fixas.
+    Estas continuam legíveis mesmo quando
+    existem muitas horas.
+  */
+  const userWidth = 300;
+  const dateWidth = 95;
+
+  const performanceWidth = 110;
+  const totalPickedWidth = 105;
+  const avgPickWidth = 95;
+
+  const fixedWidth =
+    userWidth +
+    dateWidth +
+    performanceWidth +
+    totalPickedWidth +
+    avgPickWidth;
+
+  /*
+    Menor largura permitida por hora.
+
+    Só abaixo deste valor usamos scroll
+    em vez de esmagar ainda mais os dados.
+  */
+  const minHourWidth = 42;
+
+  let hourWidth = minHourWidth;
+
+  if (hourCount > 0) {
+    const remainingWidth =
+      availableWidth - fixedWidth;
+
+    hourWidth =
+      Math.floor(
+        remainingWidth / hourCount
+      );
+
+    hourWidth =
+      Math.max(
+        minHourWidth,
+        hourWidth
+      );
+  }
+
+  /*
+    Se todas as horas couberem,
+    usamos exatamente a largura disponível.
+
+    Se não couberem mesmo a 42 px,
+    a tabela cresce e o wrapper fornece
+    scroll horizontal.
+  */
+  const minimumRequiredWidth =
+    fixedWidth +
+    (hourCount * minHourWidth);
+
+  const tableWidth =
+    Math.max(
+      availableWidth,
+      minimumRequiredWidth
+    );
+
+  table.style.width =
+    `${tableWidth}px`;
+
+  table.style.minWidth =
+    `${tableWidth}px`;
+
+  /*
+    Usado também pela Date sticky
+    para saber onde termina User ID.
+  */
+  table.style.setProperty(
+    '--hourly-user-width',
+    `${userWidth}px`
+  );
+
+  /*
+    Fonte e padding também se adaptam
+    à quantidade de informação.
+  */
+  let hourFontSize = 13;
+  let hourPadding = 5;
+
+  if (hourWidth < 58) {
+    hourFontSize = 12;
+    hourPadding = 3;
+  }
+
+  if (hourWidth < 48) {
+    hourFontSize = 11;
+    hourPadding = 2;
+  }
+
+  table.style.setProperty(
+    '--hourly-font-size',
+    `${hourFontSize}px`
+  );
+
+  table.style.setProperty(
+    '--hourly-padding-x',
+    `${hourPadding}px`
+  );
+
+  const headers =
+    headerRow.querySelectorAll('th');
+
+  if (!headers.length) {
+    return;
+  }
+
+  function setHeaderWidth(element, width) {
+    if (!element) return;
+
+    element.style.width = `${width}px`;
+    element.style.minWidth = `${width}px`;
+    element.style.maxWidth = `${width}px`;
+  }
+
+  /* User ID */
+  setHeaderWidth(
+    headers[0],
+    userWidth
+  );
+
+  /* Date */
+  setHeaderWidth(
+    headers[1],
+    dateWidth
+  );
+
+  /* Horas dinâmicas */
+  for (
+    let i = 0;
+    i < hourCount;
+    i++
+  ) {
+    setHeaderWidth(
+      headers[2 + i],
+      hourWidth
+    );
+  }
+
+  const performanceIndex =
+    2 + hourCount;
+
+  /* Performance */
+  setHeaderWidth(
+    headers[performanceIndex],
+    performanceWidth
+  );
+
+  /* Total Picked */
+  setHeaderWidth(
+    headers[performanceIndex + 1],
+    totalPickedWidth
+  );
+
+  /* Avg Pick/h */
+  setHeaderWidth(
+    headers[performanceIndex + 2],
+    avgPickWidth
+  );
+}
+    function updateHourlyProductivityTable(dataMap) {
+      const headerRow = document.getElementById('hourlyHeaderRow');
+      const tableBody = document.getElementById('hourlyProductivityTableBody');
+
+      if (!headerRow || !tableBody) return;
+
+      const entries = Object.entries(dataMap);
+
+      /* --------------------------------------------
+         Helper para criar cabeçalhos
+         -------------------------------------------- */
+      function addHeader(text, className = '') {
+        const th = document.createElement('th');
+        th.textContent = text;
+
+        if (className) {
+          th.className = className;
+        }
+
+        headerRow.appendChild(th);
+      }
+
+      /* --------------------------------------------
+         Descobre o intervalo horário dos dados
+         filtrados atualmente.
+         Exemplo:
+         primeiro movimento = 08:17
+         último movimento   = 17:42
+
+         Cabeçalho:
+         08:00 ... 17:00
+         -------------------------------------------- */
+      let minHour = 24;
+      let maxHour = -1;
+      let hasHourlyData = false;
+
+      entries.forEach(([groupKey, stats]) => {
+        const hourlyQty = stats.hourlyQty || {};
+
+        if (Object.keys(hourlyQty).length > 0) {
+          hasHourlyData = true;
+        }
+
+        if (stats.inTime) {
+          const inHour = parseInt(
+            String(stats.inTime).split(':')[0],
+            10
+          );
+
+          if (!Number.isNaN(inHour)) {
+            minHour = Math.min(minHour, inHour);
+          }
+        }
+
+        if (stats.outTime) {
+          const outHour = parseInt(
+            String(stats.outTime).split(':')[0],
+            10
+          );
+
+          if (!Number.isNaN(outHour)) {
+            maxHour = Math.max(maxHour, outHour);
+          }
+        }
+      });
+
+      const hourBuckets = [];
+
+      if (minHour <= maxHour) {
+        for (let hour = minHour; hour <= maxHour; hour++) {
+          hourBuckets.push(
+            `${String(hour).padStart(2, '0')}:00`
+          );
+        }
+      }
+
+      /* --------------------------------------------
+         Reconstrói o cabeçalho dinamicamente
+         -------------------------------------------- */
+      headerRow.innerHTML = '';
+
+      addHeader('User ID');
+      addHeader('Date');
+
+      hourBuckets.forEach(hour => {
+        addHeader(hour, 'hourly-hour-column');
+      });
+
+      addHeader(
+        'Performance',
+        'hourly-summary-column'
+      );
+
+      addHeader(
+        'Total Picked',
+        'hourly-summary-column'
+      );
+
+      addHeader(
+        'Avg Pick/h',
+        'hourly-summary-column'
+      );
+/* Guarda quantidade de horas para resize */
+const hourlyTable =
+  document.getElementById('hourlyProductivityTable');
+
+if (hourlyTable) {
+  hourlyTable.dataset.hourCount =
+    String(hourBuckets.length);
+}
+
+/* Autoajusta larguras */
+applyHourlyElasticLayout(
+  hourBuckets.length
+);
+      /* --------------------------------------------
+         Limpa corpo atual
+         -------------------------------------------- */
+      tableBody.innerHTML = '';
+
+      /* --------------------------------------------
+         Nenhum resultado depois dos filtros
+         -------------------------------------------- */
+      if (entries.length === 0) {
+        const row = document.createElement('tr');
+        const cell = document.createElement('td');
+
+        cell.colSpan = 5;
+        cell.className = 'hourly-no-data';
+        cell.textContent =
+          'No records match the current Home filters.';
+
+        row.appendChild(cell);
+        tableBody.appendChild(row);
+
+        return;
+      }
+
+      /* --------------------------------------------
+         Proteção para dados antigos no localStorage
+         que ainda não possuam hourlyQty
+         -------------------------------------------- */
+      if (!hasHourlyData) {
+        const row = document.createElement('tr');
+        const cell = document.createElement('td');
+
+        cell.colSpan = 5 + hourBuckets.length;
+        cell.className = 'hourly-no-data';
+        cell.textContent =
+          'Hourly data is not available. Reload the CSV file.';
+
+        row.appendChild(cell);
+        tableBody.appendChild(row);
+
+        return;
+      }
+
+      /* --------------------------------------------
+         Cria uma linha para cada User ID + Date
+         -------------------------------------------- */
+      entries.forEach(([groupKey, stats]) => {
+  const userId = stats.userId || groupKey;
+  const userDisplay = stats.userDisplay || userId;
+  const hourlyQty = stats.hourlyQty || {};
+
+  const row = document.createElement('tr');
+
+        /* User ID */
+        const userCell = document.createElement('td');
+        userCell.textContent = userDisplay;
+        userCell.classList.add('allow-copy');
+        row.appendChild(userCell);
+
+        /* Date */
+        const dateCell = document.createElement('td');
+        dateCell.textContent = stats.date || '';
+        row.appendChild(dateCell);
+
+        const inHour = stats.inTime
+          ? parseInt(
+              String(stats.inTime).split(':')[0],
+              10
+            )
+          : NaN;
+
+        const outHour = stats.outTime
+          ? parseInt(
+              String(stats.outTime).split(':')[0],
+              10
+            )
+          : NaN;
+
+        /* --------------------------------------------
+           Colunas horárias
+           -------------------------------------------- */
+        hourBuckets.forEach(hourBucket => {
+          const hourCell = document.createElement('td');
+          hourCell.classList.add('hourly-hour-column');
+
+          const bucketHour = parseInt(
+            hourBucket.split(':')[0],
+            10
+          );
+
+          const hasQty =
+            Object.prototype.hasOwnProperty.call(
+              hourlyQty,
+              hourBucket
+            );
+
+          if (hasQty) {
+            /* Houve picks nesta hora */
+            hourCell.textContent =
+              hourlyQty[hourBucket];
+
+          } else if (
+            !Number.isNaN(inHour) &&
+            !Number.isNaN(outHour) &&
+            bucketHour >= inHour &&
+            bucketHour <= outHour
+          ) {
+            /* Dentro do período de trabalho,
+               mas nenhum pick nesta hora */
+            hourCell.textContent = '0';
+
+          } else {
+            /* Pessoa ainda não tinha começado
+               ou já tinha terminado */
+            hourCell.textContent = '—';
+          }
+
+          row.appendChild(hourCell);
+        });
+
+        /* --------------------------------------------
+           Performance numérica
+           Mantém a mesma classificação/cor da Home
+           -------------------------------------------- */
+        const performanceCell =
+          document.createElement('td');
+
+        performanceCell.classList.add(
+          'hourly-summary-column'
+        );
+
+        if (stats.performanceClass) {
+          performanceCell.classList.add(
+            stats.performanceClass
+          );
+        }
+
+        const performanceNumber =
+          getPerformanceNumber(stats);
+
+        performanceCell.textContent =
+          `${performanceNumber.toFixed(2)}%`;
+
+        row.appendChild(performanceCell);
+
+        /* --------------------------------------------
+           Total Picked
+           -------------------------------------------- */
+        const totalPickedCell =
+          document.createElement('td');
+
+        totalPickedCell.classList.add(
+          'hourly-summary-column'
+        );
+
+        totalPickedCell.textContent =
+          stats.qty || 0;
+
+        row.appendChild(totalPickedCell);
+
+        /* --------------------------------------------
+           Avg Pick/h
+           Mesma base usada atualmente pela Home
+           -------------------------------------------- */
+        const totalHoursDecimal =
+          timeToSeconds(
+            stats.totalHours || '00:00:00'
+          ) / 3600;
+
+        const avgPickHour =
+          totalHoursDecimal > 0
+            ? (
+                (stats.qty || 0) /
+                totalHoursDecimal
+              ).toFixed(0)
+            : '0';
+
+        const avgPickHourCell =
+          document.createElement('td');
+
+        avgPickHourCell.classList.add(
+          'hourly-summary-column'
+        );
+
+        avgPickHourCell.textContent =
+          avgPickHour;
+
+        row.appendChild(avgPickHourCell);
+
+        tableBody.appendChild(row);
+      });
+    }
 
     /* ======================================================
      * Atualização da Tabela Gaps
@@ -1528,8 +2276,9 @@ function getUserType(userId) {
   gapsTableBody.innerHTML = '';
 
   Object.entries(dataMap).forEach(([groupKey, stats]) => {
-    const userId = stats.userId || groupKey;
-    const hasGaps = stats.nGaps > 0 && Array.isArray(stats.gapsList) && stats.gapsList.length > 0;
+  const userId = stats.userId || groupKey;
+  const userDisplay = stats.userDisplay || userId;
+  const hasGaps = stats.nGaps > 0 && Array.isArray(stats.gapsList) && stats.gapsList.length > 0;
 
     if (hasGaps) {
       stats.gapsList.forEach((gapObj, index) => {
@@ -1562,7 +2311,7 @@ function getUserType(userId) {
 
         row.innerHTML = `
           <td>${stats.date || ''}</td>
-          <td>${userId}</td>
+          <td>${userDisplay}</td>
           <td>${gapObj.locationIn || ''}</td>
           <td>${gapObj.qtyIn || 0}</td>
           <td>${gapObj.locationOut || ''}</td>
@@ -1680,6 +2429,9 @@ document.getElementById('userLostLabel').textContent = lostDecimal.toFixed(2);
   updateTable(filteredMap);
   updateStats(filteredMap);
 
+  // Hourly Productivity sincronizado com os mesmos filtros
+  updateHourlyProductivityTable(filteredMap);
+
   // Gaps sincronizado com os mesmos filtros
   updateGapsTable(filteredMap);
 
@@ -1740,18 +2492,21 @@ function getFilteredRetailMapFromUI(dataMap) {
   const userTypeFilter = document.getElementById('filterUserType').value;
 
   const filtered = Object.entries(dataMap).filter(([groupKey, stats]) => {
-    const userId = stats.userId || groupKey;
+  const userId = stats.userId || groupKey;
+  const userDisplay = stats.userDisplay || userId;
 
-    const matchesDate =
-      !dateFilter || stats.date === dateFilter;
+  const matchesDate =
+    !dateFilter || stats.date === dateFilter;
 
-    const matchesPerformance =
-      !performanceFilter || stats.performance.includes(performanceFilter);
+  const matchesPerformance =
+    !performanceFilter || stats.performance.includes(performanceFilter);
 
-    const matchesUserId =
-      !userIdFilter || userId.toLowerCase().includes(userIdFilter);
+  const matchesUserId =
+    !userIdFilter ||
+    userId.toLowerCase().includes(userIdFilter) ||
+    userDisplay.toLowerCase().includes(userIdFilter);
 
-    const userType = stats.userType || getUserType(userId);
+  const userType = stats.userType || getUserType(userId);
     const matchesUserType =
       !userTypeFilter || userType === userTypeFilter;
 
@@ -2211,10 +2966,30 @@ document.getElementById('downloadReportBtnXLSX').addEventListener('click', downl
 
 // Botões de Navegação na Top Bar
 document.getElementById('homeTabBtn').addEventListener('click', showHomeTab);
+document.getElementById('hourlyTabBtn').addEventListener('click', showHourlyTab);
 document.getElementById('gapsTabBtn').addEventListener('click', showGapsTab);
 document.getElementById('dashboardTabBtn').addEventListener('click', showDashboardTab);
 document.getElementById('summaryTabBtn').addEventListener('click', showSummaryTab);
+/* Hourly Productivity - elastic resize */
+window.addEventListener('resize', () => {
+  const table =
+    document.getElementById(
+      'hourlyProductivityTable'
+    );
 
+  if (!table) return;
+
+  const hourCount =
+    Number(
+      table.dataset.hourCount || 0
+    );
+
+  if (hourCount > 0) {
+    applyHourlyElasticLayout(
+      hourCount
+    );
+  }
+});
 // Eventos para os filtros integrados
 document.getElementById('filterDate').addEventListener('change', () => {
   const savedData = localStorage.getItem('retailPickData');
@@ -2295,23 +3070,44 @@ document.getElementById('filterUserType').addEventListener('change', () => {
     }
 
     function parseBlueYonderTransactionUser(cell) {
-      const lines = splitCellLines(cell);
-      const firstLine = lines[0] || '';
-      const dateTimeMatch = firstLine.match(/^(\d{1,2}\/\d{1,2}\/\d{4})\s+(\d{1,2}:\d{2}(?::\d{2})?)/);
+  const lines = splitCellLines(cell);
+  const firstLine = lines[0] || '';
+  const dateTimeMatch = firstLine.match(/^(\d{1,2}\/\d{1,2}\/\d{4})\s+(\d{1,2}:\d{2}(?::\d{2})?)/);
 
-      const date = dateTimeMatch ? dateTimeMatch[1] : '';
-      const time = dateTimeMatch ? ensureTimeFormat(dateTimeMatch[2]) : '';
+  const date = dateTimeMatch ? dateTimeMatch[1] : '';
+  const time = dateTimeMatch ? ensureTimeFormat(dateTimeMatch[2]) : '';
 
-      let userLine = lines[1] || '';
-      if (!userLine && lines.length > 1) {
-        userLine = lines.find(line => !/^\d{1,2}\/\d{1,2}\/\d{4}/.test(line)) || '';
-      }
+  let userLine = lines[1] || '';
 
-      // First token = User ID. Example: "AGYISMAIA  Ismail, Abdijabar" -> AGYISMAIA
-      const userId = (userLine.split(/\s+/)[0] || '').trim();
+  if (!userLine && lines.length > 1) {
+    userLine =
+      lines.find(
+        line =>
+          !/^\d{1,2}\/\d{1,2}\/\d{4}/.test(line)
+      ) || '';
+  }
 
-      return { date, time, userId };
-    }
+  /*
+    Mantém o User ID original para toda a lógica interna.
+    Exemplo:
+    "AGYALIUSMA1  Ali, Usman"
+       ↓
+    userId      = "AGYALIUSMA1"
+    userDisplay = "AGYALIUSMA1 Ali, Usman"
+  */
+  const userId =
+    (userLine.split(/\s+/)[0] || '').trim();
+
+  const userDisplay =
+    userLine.replace(/\s+/g, ' ').trim();
+
+  return {
+    date,
+    time,
+    userId,
+    userDisplay
+  };
+}
 
     function extractBlueYonderTicket(cell) {
       const lines = splitCellLines(cell);
@@ -2338,14 +3134,15 @@ document.getElementById('filterUserType').addEventListener('change', () => {
         const location = extractBlueYonderSourceLocation(row[8]);
 
         return {
-          userId: transaction.userId,
-          date: transaction.date,
-          time: transaction.time,
-          qty,
-          ticket,
-          location,
-          sortKey: `${normaliseDateForSort(transaction.date)} ${transaction.time}`
-        };
+  userId: transaction.userId,
+  userDisplay: transaction.userDisplay,
+  date: transaction.date,
+  time: transaction.time,
+  qty,
+  ticket,
+  location,
+  sortKey: `${normaliseDateForSort(transaction.date)} ${transaction.time}`
+};
       }).filter(r => r.userId && r.time);
 
       parsedRows.sort((a, b) => {
@@ -2359,29 +3156,39 @@ document.getElementById('filterUserType').addEventListener('change', () => {
 });
 
       parsedRows.forEach(item => {
-  const { userId, qty, time, location, date, ticket } = item;
+  const {
+    userId,
+    userDisplay,
+    qty,
+    time,
+    location,
+    date,
+    ticket
+  } = item;
 
   // Group by Date + User ID to avoid mixing several days for the same user
   const groupKey = `${normaliseDateForSort(date)}|${userId}`;
 
   if (!dataMap[groupKey]) {
-    dataMap[groupKey] = {
-      userId: userId,
-      qty: 0,
-      inTime: time,
-      outTime: time,
-      totalHours: '00:00:00',
-      performance: '',
-      performanceClass: '',
-      totalGaps: 0,
-      nGaps: 0,
-      date: date,
-      txnCount: 0,
-      locationIn: location || '',
-      locationOut: location || '',
-      gapsList: [],
-      userType: getUserType(userId)
-    };
+  dataMap[groupKey] = {
+  userId: userId,
+  userDisplay: userDisplay || userId,
+  qty: 0,
+    inTime: time,
+    outTime: time,
+    totalHours: '00:00:00',
+    performance: '',
+    performanceClass: '',
+    totalGaps: 0,
+    nGaps: 0,
+    date: date,
+    txnCount: 0,
+    locationIn: location || '',
+    locationOut: location || '',
+    gapsList: [],
+    hourlyQty: {},
+    userType: getUserType(userId)
+  };
 
     validEvents[groupKey] = [];
     allEvents[groupKey] = [];
@@ -2389,10 +3196,18 @@ document.getElementById('filterUserType').addEventListener('change', () => {
 
   if (!dataMap[groupKey].date && date) dataMap[groupKey].date = date;
 
-  dataMap[groupKey].qty += qty;
-  dataMap[groupKey].txnCount++;
+dataMap[groupKey].qty += qty;
+dataMap[groupKey].txnCount++;
 
-  const eventObj = { time, location, date, ticket, qty, sortKey: item.sortKey };
+/* Hourly Productivity */
+const hourBucket = getHourBucket(time);
+
+if (hourBucket) {
+  dataMap[groupKey].hourlyQty[hourBucket] =
+    (dataMap[groupKey].hourlyQty[hourBucket] || 0) + qty;
+}
+
+const eventObj = { time, location, date, ticket, qty, sortKey: item.sortKey };
 
    allEvents[groupKey].push(eventObj);
    validEvents[groupKey].push(eventObj);
@@ -2454,32 +3269,41 @@ document.getElementById('filterUserType').addEventListener('change', () => {
         if (!userId || !time) return;
 
         if (!dataMap[userId]) {
-          dataMap[userId] = {
-            qty: 0,
-            inTime: null,
-            outTime: null,
-            totalHours: 0,
-            performance: '',
-            performanceClass: '',
-            totalGaps: 0,
-            nGaps: 0,
-            date: formattedDate,
-            txnCount: 0,
-            locationIn: '',
-            locationOut: '',
-            gapsList: [],
-            userType: getUserType(userId)
-          };
+  dataMap[userId] = {
+    qty: 0,
+    inTime: null,
+    outTime: null,
+    totalHours: 0,
+    performance: '',
+    performanceClass: '',
+    totalGaps: 0,
+    nGaps: 0,
+    date: formattedDate,
+    txnCount: 0,
+    locationIn: '',
+    locationOut: '',
+    gapsList: [],
+    hourlyQty: {},
+    userType: getUserType(userId)
+  };
 
           validEvents[userId] = [];
           allEvents[userId] = [];
         }
 
         dataMap[userId].qty += qty;
-        dataMap[userId].txnCount++;
+dataMap[userId].txnCount++;
 
-        allEvents[userId].push({ time, location, date: formattedDate, ticket: '' });
-        validEvents[userId].push({ time, location, date: formattedDate, ticket: '' });
+/* Hourly Productivity */
+const hourBucket = getHourBucket(time);
+
+if (hourBucket) {
+  dataMap[userId].hourlyQty[hourBucket] =
+    (dataMap[userId].hourlyQty[hourBucket] || 0) + qty;
+}
+
+allEvents[userId].push({ time, location, date: formattedDate, ticket: '' });
+validEvents[userId].push({ time, location, date: formattedDate, ticket: '' });
 
         if (!dataMap[userId].inTime || time < dataMap[userId].inTime) {
           dataMap[userId].inTime = time;
@@ -2699,16 +3523,22 @@ document.getElementById('filterUserType').addEventListener('change', () => {
         ws['!sheetView'] = { showGridLines: false, showGridlines: false };
       }
 function getDisplayUserId(groupKey, stats) {
-  if (stats && stats.userId) return stats.userId;
+  if (stats && stats.userDisplay) {
+    return stats.userDisplay;
+  }
+
+  if (stats && stats.userId) {
+    return stats.userId;
+  }
 
   const textKey = String(groupKey || '');
+
   if (textKey.includes('|')) {
     return textKey.split('|').pop();
   }
 
   return textKey;
-}
-      function paintWhiteCanvas(ws, maxRows, maxCols) {
+}      function paintWhiteCanvas(ws, maxRows, maxCols) {
         // Creates a clean white canvas around the report area.
         // This visually hides gridlines even when Excel keeps the Gridlines checkbox enabled.
         for (let r = 0; r < maxRows; r++) {
@@ -3054,7 +3884,7 @@ function getDisplayUserId(groupKey, stats) {
         applyBodyStyle(ws, 5, data.length, 13);
         addAutoFilter(ws, `A4:M${data.length}`);
         ws['!freeze'] = { xSplit: 0, ySplit: 4 };
-        setCols(ws, [12, 18, 10, 12, 12, 14, 14, 24, 14, 10, 10, 12, 14]);
+        setCols(ws, [12, 30, 10, 12, 12, 14, 14, 24, 14, 10, 10, 12, 14]);
         setRows(ws, [28, 20, 6, 28, ...Array(Math.max(0, data.length - 4)).fill(18)]);
 
         for (let r = 4; r < data.length; r++) {
@@ -3076,7 +3906,361 @@ function getDisplayUserId(groupKey, stats) {
         hideGridlines(ws);
         XLSX.utils.book_append_sheet(workbook, ws, 'Retail Data');
       }
+      function addHourlyProductivitySheet() {
+        const entries = Object.entries(dataMap);
 
+        /* --------------------------------------------
+           Descobre primeira e última hora do período
+           -------------------------------------------- */
+        let minHour = 24;
+        let maxHour = -1;
+
+        entries.forEach(([groupKey, stats]) => {
+          if (stats.inTime) {
+            const inHour = parseInt(
+              String(stats.inTime).split(':')[0],
+              10
+            );
+
+            if (!Number.isNaN(inHour)) {
+              minHour = Math.min(minHour, inHour);
+            }
+          }
+
+          if (stats.outTime) {
+            const outHour = parseInt(
+              String(stats.outTime).split(':')[0],
+              10
+            );
+
+            if (!Number.isNaN(outHour)) {
+              maxHour = Math.max(maxHour, outHour);
+            }
+          }
+        });
+
+        const hourBuckets = [];
+
+        if (minHour <= maxHour) {
+          for (let hour = minHour; hour <= maxHour; hour++) {
+            hourBuckets.push(
+              `${String(hour).padStart(2, '0')}:00`
+            );
+          }
+        }
+
+        /* --------------------------------------------
+           Cabeçalho dinâmico
+           -------------------------------------------- */
+        const header = [
+          'User ID',
+          'Date',
+          ...hourBuckets,
+          'Performance',
+          'Total Picked',
+          'Avg Pick/h'
+        ];
+
+        const hourlyRows = [header];
+
+        /* --------------------------------------------
+           Linhas User ID + Date
+           -------------------------------------------- */
+        entries.forEach(([groupKey, stats]) => {
+          const userId =
+            getDisplayUserId(groupKey, stats);
+
+          const hourlyQty =
+            stats.hourlyQty || {};
+
+          const inHour = stats.inTime
+            ? parseInt(
+                String(stats.inTime).split(':')[0],
+                10
+              )
+            : NaN;
+
+          const outHour = stats.outTime
+            ? parseInt(
+                String(stats.outTime).split(':')[0],
+                10
+              )
+            : NaN;
+
+          const hourlyValues =
+            hourBuckets.map(hourBucket => {
+              const bucketHour = parseInt(
+                hourBucket.split(':')[0],
+                10
+              );
+
+              const hasQty =
+                Object.prototype.hasOwnProperty.call(
+                  hourlyQty,
+                  hourBucket
+                );
+
+              if (hasQty) {
+                return hourlyQty[hourBucket];
+              }
+
+              if (
+                !Number.isNaN(inHour) &&
+                !Number.isNaN(outHour) &&
+                bucketHour >= inHour &&
+                bucketHour <= outHour
+              ) {
+                return 0;
+              }
+
+              return '—';
+            });
+
+          const performance =
+            getPerfNumberFromStats(stats);
+
+          const totalHoursDecimal =
+            timeToSeconds(
+              stats.totalHours || '00:00:00'
+            ) / 3600;
+
+          const avgPickHour =
+            totalHoursDecimal > 0
+              ? Math.round(
+                  (stats.qty || 0) /
+                  totalHoursDecimal
+                )
+              : 0;
+
+          hourlyRows.push([
+            userId,
+            stats.date || '',
+            ...hourlyValues,
+            performance.toFixed(2) + '%',
+            stats.qty || 0,
+            avgPickHour
+          ]);
+        });
+
+        /* --------------------------------------------
+           Layout da worksheet
+           -------------------------------------------- */
+        const data = [
+          ['Retail Pick Hourly Productivity'],
+          ['DHL / Selfridges | Hour-by-Hour Productivity'],
+          [],
+          ...hourlyRows
+        ];
+
+        const ws =
+          XLSX.utils.aoa_to_sheet(data);
+
+        const colCount = header.length;
+
+        const lastCol =
+          XLSX.utils.encode_col(
+            colCount - 1
+          );
+
+        /* Título e subtítulo */
+        makeTitle(
+          ws,
+          `A1:${lastCol}1`,
+          `A2:${lastCol}2`,
+          'Retail Pick Hourly Productivity',
+          'DHL / Selfridges | Hour-by-Hour Productivity'
+        );
+
+        /* Mesmo padrão visual da Retail Data */
+        applyHeaderStyle(
+          ws,
+          4,
+          colCount
+        );
+
+        applyBodyStyle(
+          ws,
+          5,
+          data.length,
+          colCount
+        );
+
+        addAutoFilter(
+          ws,
+          `A4:${lastCol}${data.length}`
+        );
+
+        ws['!freeze'] = {
+          xSplit: 0,
+          ySplit: 4
+        };
+
+        /* Larguras:
+           User ID
+           Date
+           horas dinâmicas
+           Performance
+           Total Picked
+           Avg Pick/h
+        */
+        setCols(
+          ws,
+          [
+            30,
+            12,
+            ...hourBuckets.map(() => 10),
+            16,
+            14,
+            12
+          ]
+        );
+
+        setRows(
+          ws,
+          [
+            28,
+            20,
+            6,
+            28,
+            ...Array(
+              Math.max(
+                0,
+                data.length - 4
+              )
+            ).fill(18)
+          ]
+        );
+
+        /* --------------------------------------------
+           Performance:
+           mantém apenas percentagem numérica
+           e as mesmas cores da Home
+           -------------------------------------------- */
+        const performanceCol =
+          2 + hourBuckets.length;
+
+        for (
+          let r = 4;
+          r < data.length;
+          r++
+        ) {
+          const perf =
+            parseFloat(
+              String(
+                data[r][performanceCol] || '0'
+              ).replace('%', '')
+            ) || 0;
+
+          const ref =
+            XLSX.utils.encode_cell({
+              r,
+              c: performanceCol
+            });
+
+          let fontColor = C.black;
+
+          if (perf >= 100) {
+            fontColor = '28A745';
+          } else if (perf >= 85) {
+            fontColor = 'FF8C00';
+          } else if (perf > 0) {
+            fontColor = 'DC3545';
+          }
+
+          styleCell(
+            ws,
+            ref,
+            {
+              font: {
+                color: {
+                  rgb: fontColor
+                },
+                bold: true,
+                sz: 10
+              },
+              alignment: {
+                horizontal: 'center',
+                vertical: 'center'
+              },
+              border: borderThin
+            }
+          );
+        }
+
+        /* --------------------------------------------
+           Formato numérico:
+           horas + Total Picked + Avg Pick/h
+           -------------------------------------------- */
+        for (
+          let r = 4;
+          r < data.length;
+          r++
+        ) {
+          /* Horas */
+          for (
+            let c = 2;
+            c < 2 + hourBuckets.length;
+            c++
+          ) {
+            const ref =
+              XLSX.utils.encode_cell({
+                r,
+                c
+              });
+
+            if (
+              ws[ref] &&
+              typeof ws[ref].v === 'number'
+            ) {
+              ws[ref].z = '#,##0';
+            }
+          }
+
+          /* Total Picked */
+          const totalPickedRef =
+            XLSX.utils.encode_cell({
+              r,
+              c: performanceCol + 1
+            });
+
+          if (ws[totalPickedRef]) {
+            ws[totalPickedRef].z =
+              '#,##0';
+          }
+
+          /* Avg Pick/h */
+          const avgPickRef =
+            XLSX.utils.encode_cell({
+              r,
+              c: performanceCol + 2
+            });
+
+          if (ws[avgPickRef]) {
+            ws[avgPickRef].z =
+              '#,##0';
+          }
+        }
+
+        paintWhiteCanvas(
+          ws,
+          Math.max(
+            120,
+            data.length + 20
+          ),
+          Math.max(
+            26,
+            colCount + 8
+          )
+        );
+
+        hideGridlines(ws);
+
+        XLSX.utils.book_append_sheet(
+          workbook,
+          ws,
+          'Hourly Productivity'
+        );
+      }
       function addGapsSheet() {
   const gapsRows = buildGapsRows(dataMap);
   const data = [
@@ -3099,7 +4283,7 @@ function getDisplayUserId(groupKey, stats) {
 
   setCols(ws, [
     12, // Date
-    18, // User ID
+    30, // User ID
     18, // Location IN
     10, // Qty IN
     18, // Location OUT
@@ -3429,7 +4613,8 @@ XLSX.utils.book_append_sheet(workbook, ws, 'Summary CORE AGY');
         XLSX.utils.book_append_sheet(workbook, ws, 'Store LPN Analysis');
       }
 
-      addRetailDataSheet();
+            addRetailDataSheet();
+      addHourlyProductivitySheet();
       addGapsSheet();
       addDashboardSheet();
       addSummarySheet();

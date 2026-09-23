@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -1764,7 +1763,26 @@ function showGapsTab() {
   <td>${gapTxnPercent}</td>
   <td>${avgPHours}</td>
 `;
-        tableBody.appendChild(row);
+
+/* Clique na linha = filtra automaticamente este User ID */
+row.style.cursor = 'pointer';
+
+row.addEventListener('click', () => {
+  const filterInput =
+    document.getElementById('filterUserId');
+
+  if (!filterInput) return;
+
+  /* Usa sempre o ID interno, nunca o nome */
+  filterInput.value = userId;
+
+  /* Reutiliza exatamente o filtro que já existe */
+  filterInput.dispatchEvent(
+    new Event('input', { bubbles: true })
+  );
+});
+
+tableBody.appendChild(row);
       });
     }
     /* ======================================================
